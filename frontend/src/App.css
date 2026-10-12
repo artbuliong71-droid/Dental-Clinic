@@ -1,0 +1,285 @@
+:root {
+  --primary-blue: #4a90d9;
+  --light-blue: #eaf4fd;
+  --soft-blue: #cfe8fb;
+  --dark-text: #2d3748;
+  --white: #ffffff;
+  --success-green: #2f855a;
+  --error-red: #c53030;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-color: var(--light-blue);
+  color: var(--dark-text);
+}
+
+/* --- Navbar --- */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--primary-blue);
+  color: var(--white);
+  padding: 1rem 2rem;
+}
+
+.navbar h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.navbar button {
+  background-color: var(--white);
+  color: var(--primary-blue);
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.navbar button:hover {
+  background-color: var(--soft-blue);
+}
+
+/* --- Auth pages (Login, Register, VerifyOTP) --- */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.auth-form {
+  background-color: var(--white);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(74, 144, 217, 0.15);
+  width: 100%;
+  max-width: 380px;
+}
+.auth-logo {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+.auth-form h2 {
+  text-align: center;
+  color: var(--primary-blue);
+  margin-bottom: 1.5rem;
+}
+
+.auth-form label {
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.auth-form input,
+.auth-form select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--soft-blue);
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.auth-form button[type="submit"] {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.7rem;
+  background-color: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.auth-form button[type="submit"]:hover {
+  background-color: #3a78b5;
+}
+
+.auth-form button[type="submit"]:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: var(--error-red);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* --- Dashboard pages --- */
+.dashboard-container {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.dashboard-container h2 {
+  color: var(--primary-blue);
+  border-bottom: 2px solid var(--soft-blue);
+  padding-bottom: 0.4rem;
+  margin-top: 2.5rem;
+}
+
+.stat-card {
+  background-color: var(--white);
+  border: 1px solid var(--soft-blue);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(74, 144, 217, 0.1);
+}
+
+.appointment-list {
+  list-style: none;
+  padding: 0;
+}
+
+.appointment-list li {
+  background-color: var(--white);
+  border: 1px solid var(--soft-blue);
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+  margin-bottom: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.appointment-list button {
+  background-color: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.booking-form {
+  background-color: var(--white);
+  border: 1px solid var(--soft-blue);
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.booking-form label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.booking-form input,
+.booking-form select {
+  padding: 0.5rem;
+  border: 1px solid var(--soft-blue);
+  border-radius: 6px;
+}
+
+.booking-form button {
+  background-color: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.success-message {
+  color: var(--success-green);
+  font-weight: 600;
+}
+/* --- Dashboard Layout (Sidebar + Main Content) --- */
+.layout-container {
+  display: flex;
+  min-height: calc(100vh - 68px); /* buong taas, minus ang navbar */
+}
+
+.sidebar {
+  width: 220px;
+  background-color: var(--white);
+  border-right: 1px solid var(--soft-blue);
+  padding: 1.5rem 0;
+  flex-shrink: 0;
+}
+
+.sidebar-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.8rem 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--dark-text);
+  cursor: pointer;
+}
+
+.sidebar-item:hover {
+  background-color: var(--light-blue);
+}
+
+.sidebar-item.active {
+  background-color: var(--soft-blue);
+  color: var(--primary-blue);
+  font-weight: 700;
+  border-left: 4px solid var(--primary-blue);
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1000px;
+}
+
+.burger-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  color: var(--white);
+  cursor: pointer;
+  margin-right: 1rem;
+}
+
+/* --- Responsive: itago ang sidebar sa maliit na screen, lalabas lang ang burger --- */
+@media (max-width: 768px) {
+  .burger-btn {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 68px;
+    left: 0;
+    bottom: 0;
+    z-index: 10;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
