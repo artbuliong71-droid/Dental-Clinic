@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import {
+  LayoutDashboard,
+  CalendarPlus,
+  CalendarDays,
+  FileText,
+  Hourglass,
+} from "lucide-react";
 import { getServices } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
 import {
@@ -32,9 +39,17 @@ const PatientDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sidebarItems = [
-    { key: "overview", label: "Overview", icon: "📊" },
-    { key: "book", label: "Book Appointment", icon: "📅" },
-    { key: "appointments", label: "My Appointments", icon: "📋" },
+    { key: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
+    {
+      key: "book",
+      label: "Book Appointment",
+      icon: <CalendarPlus size={18} />,
+    },
+    {
+      key: "appointments",
+      label: "My Appointments",
+      icon: <CalendarDays size={18} />,
+    },
   ];
 
   // Kinukuha natin ang lahat ng kailangang data pagka-load ng page
