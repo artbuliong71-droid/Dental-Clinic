@@ -4,11 +4,14 @@ const connectDB = require("../config/db");
 const User = require("../models/User");
 const Dentist = require("../models/Dentist");
 
-const seedStaff = async () => {
+// Seeds ONLY the owner (admin) account.
+// Staff accounts (secretary, etc.) are now created by the admin
+// from the dashboard: Staff Accounts > Create a staff account.
+const seedAdmin = async () => {
   await connectDB();
 
   // --- Owner account (role: admin, siya rin ang dentist, FULL control) ---
-  const ownerEmail = "owner@germinodental.com";
+  const ownerEmail = process.env.OWNER_EMAIL || "owner@germinodental.com";
   const existingOwner = await User.findOne({ email: ownerEmail });
 
   if (existingOwner) {
@@ -17,7 +20,8 @@ const seedStaff = async () => {
     const owner = await User.create({
       name: "Dr. Germino",
       email: ownerEmail,
-      password: "OwnerPass123", // palitan pagkatapos mag-login
+      // Better: put OWNER_PASSWORD in your .env instead of keeping it in code
+      password: process.env.OWNER_PASSWORD || "OwnerPass123", // palitan pagkatapos mag-login
       role: "admin",
       phone: "09171234567",
     });
@@ -33,27 +37,9 @@ const seedStaff = async () => {
     console.log("Owner (admin) account created:", ownerEmail);
   }
 
-  // --- Secretary account (role: staff, LIMITED sa appointments) ---
-  const secretaryEmail = "secretary@germinodental.com";
-  const existingSecretary = await User.findOne({ email: secretaryEmail });
-
-  if (existingSecretary) {
-    console.log("Secretary (staff) account already exists, skipping.");
-  } else {
-    await User.create({
-      name: "Clinic Secretary",
-      email: secretaryEmail,
-      password: "SecretaryPass123", // palitan pagkatapos mag-login
-      role: "staff",
-      phone: "09179876543",
-    });
-
-    console.log("Secretary (staff) account created:", secretaryEmail);
-  }
-
   console.log("Seeding complete.");
   await mongoose.disconnect();
   process.exit(0);
 };
 
-seedStaff();
+seedAdmin();

@@ -1,0 +1,255 @@
+/* Admin + Staff dashboard extras (src/components/manage.css) */
+
+/* ---------- Toolbar: search + status chips ---------- */
+.manage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 260px;
+  max-width: 360px;
+  height: 44px;
+  padding: 0 0.8rem;
+  background: #fff;
+  color: var(--muted-text);
+  border: 1.5px solid var(--soft-blue);
+  border-radius: 8px;
+}
+.search-box:focus-within {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  color: var(--dark-text);
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.chip {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--muted-text);
+  border: 1.5px solid var(--soft-blue);
+}
+.chip:hover {
+  border-color: var(--primary-blue);
+}
+.chip.active {
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: #fff;
+}
+.chip-count {
+  margin-left: 0.25rem;
+  opacity: 0.8;
+}
+
+/* ---------- Data table ---------- */
+.table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--soft-blue);
+  border-radius: 12px;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.data-table th {
+  text-align: left;
+  padding: 0.8rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted-text);
+  background: var(--light-blue);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--soft-blue);
+  vertical-align: middle;
+}
+.data-table tbody tr:hover {
+  background: #f7fbff;
+}
+.cell-sub {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted-text);
+}
+.col-action {
+  text-align: right;
+  white-space: nowrap;
+}
+.btn-primary-sm.sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+/* Table becomes stacked cards on small screens */
+@media (max-width: 700px) {
+  .data-table thead {
+    display: none;
+  }
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+  .data-table tr {
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--soft-blue);
+  }
+  .data-table tbody tr:first-child {
+    border-top: 0;
+  }
+  .data-table td {
+    border: 0;
+    padding: 0.3rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    text-align: right;
+  }
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted-text);
+    text-align: left;
+  }
+  .col-action {
+    text-align: right;
+  }
+}
+
+/* ---------- Service list (admin) ---------- */
+.service-list {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.service-item {
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid var(--soft-blue);
+  border-radius: 12px;
+}
+.service-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+.service-item h4 {
+  margin: 0;
+  color: var(--navy);
+}
+.pill {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--light-blue);
+  color: var(--primary-dark);
+  white-space: nowrap;
+}
+.service-item p {
+  margin: 0.4rem 0 0.7rem;
+  font-size: 0.88rem;
+  color: var(--muted-text);
+  min-height: 1.2em;
+}
+.service-item-foot {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.service-item-foot span:last-child {
+  color: var(--muted-text);
+  font-weight: 600;
+}
+
+/* ---------- Forms ---------- */
+.field-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.84rem;
+  color: var(--error-red);
+}
+.field input.invalid {
+  border-color: var(--error-red);
+}
+.pw-wrap {
+  position: relative;
+}
+.pw-wrap input {
+  padding-right: 46px;
+}
+.pw-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 8px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--muted-text);
+  border-radius: 6px;
+}
+.pw-toggle:hover {
+  color: var(--navy);
+}
+.form-hint {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--muted-text);
+}
+.form-actions {
+  margin-top: 1.1rem;
+}
+
+/* ---------- Overview ---------- */
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1.6rem;
+}
+.status-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  background: #fff;
+  border: 1px solid var(--soft-blue);
+  border-radius: 10px;
+}
+.status-tile strong {
+  font-size: 1.2rem;
+  color: var(--navy);
+}

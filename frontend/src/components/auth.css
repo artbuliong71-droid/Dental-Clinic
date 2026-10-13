@@ -321,3 +321,46 @@
 .input-wrap input.no-icon {
   padding-left: 16px;
 }
+
+/* ---------- OTP ---------- */
+.otp-email {
+  color: var(--navy);
+  word-break: break-all;
+}
+.otp-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+.input-wrap input.otp-box,
+.otp-grid .otp-box {
+  width: 100%;
+  height: 60px;
+  box-sizing: border-box;
+  padding: 0;
+  text-align: center;
+  font: inherit;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--navy);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.otp-grid .otp-box:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.btn-link {
+  text-decoration: none;
+}
+@media (max-width: 420px) {
+  .otp-grid {
+    gap: 6px;
+  }
+  .otp-grid .otp-box {
+    height: 52px;
+    font-size: 1.3rem;
+  }
+}

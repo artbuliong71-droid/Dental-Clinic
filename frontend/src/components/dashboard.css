@@ -1,0 +1,322 @@
+/* Shared dashboard styles (patient now; admin/staff can reuse) */
+:root {
+  --navy: #0f2a6b;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.main-content h2 {
+  color: var(--navy);
+}
+.page-sub {
+  margin: -0.6rem 0 1.4rem;
+  color: var(--muted-text);
+}
+.muted {
+  color: var(--muted-text);
+}
+.banner {
+  margin: 0 0 1rem;
+}
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 1.6rem 0 0.8rem;
+  font-size: 1.05rem;
+  color: var(--navy);
+}
+
+/* ---------- Service cards ---------- */
+.form-section {
+  background: var(--white);
+  border: 1px solid var(--soft-blue);
+  border-radius: 14px;
+  padding: 1.4rem;
+  margin-bottom: 1.2rem;
+}
+.form-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  color: var(--navy);
+}
+
+.service-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+.service-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem;
+  cursor: pointer;
+  background: var(--white);
+  border: 1.5px solid var(--soft-blue);
+  border-radius: 12px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.service-card:hover {
+  border-color: var(--primary-blue);
+}
+.service-card.selected {
+  border-color: var(--primary-blue);
+  background: var(--light-blue);
+  box-shadow: 0 0 0 1px var(--primary-blue);
+}
+.service-card:has(input:focus-visible) {
+  outline: 3px solid #9cc4ee;
+  outline-offset: 2px;
+}
+.service-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 0.25rem;
+  border-radius: 10px;
+  background: var(--light-blue);
+  color: var(--primary-blue);
+}
+.service-card.selected .service-icon {
+  background: var(--primary-blue);
+  color: #fff;
+}
+.service-name {
+  font-weight: 700;
+  color: var(--navy);
+}
+.service-desc {
+  font-size: 0.85rem;
+  color: var(--muted-text);
+  line-height: 1.4;
+  flex: 1;
+}
+.service-price {
+  margin-top: 0.3rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+/* ---------- Booking layout ---------- */
+.booking-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.2rem;
+  align-items: start;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.field-wide {
+  grid-column: 1 / -1;
+}
+.field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+.field input,
+.field select {
+  width: 100%;
+  height: 46px;
+  padding: 0 0.8rem;
+  font: inherit;
+  color: var(--dark-text);
+  background: #fff;
+  border: 1.5px solid var(--soft-blue);
+  border-radius: 8px;
+}
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.summary-card {
+  position: sticky;
+  top: 76px;
+  padding: 1.4rem;
+  background: var(--white);
+  border: 1px solid var(--soft-blue);
+  border-radius: 14px;
+}
+.summary-card h3 {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+  color: var(--navy);
+}
+.summary-card dl {
+  margin: 0;
+}
+.summary-card dt {
+  font-size: 0.78rem;
+  color: var(--muted-text);
+  margin-top: 0.7rem;
+}
+.summary-card dd {
+  margin: 0.1rem 0 0;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1.2rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--soft-blue);
+}
+.summary-total strong {
+  font-size: 1.25rem;
+  color: var(--navy);
+}
+
+/* ---------- Buttons ---------- */
+.btn-primary-sm {
+  padding: 0.7rem 1.4rem;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--primary-blue);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+}
+.btn-primary-sm:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+.btn-primary-sm:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.btn-primary-sm.block {
+  width: 100%;
+}
+.btn-outline-danger {
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--error-red);
+  border: 1.5px solid #f3c0c0;
+}
+.btn-outline-danger:hover {
+  background: #fff5f5;
+}
+
+/* ---------- Appointment cards ---------- */
+.appt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+.appt-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--white);
+  border: 1px solid var(--soft-blue);
+  border-radius: 12px;
+}
+.appt-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 0.4rem 0;
+  border-radius: 10px;
+  background: var(--light-blue);
+  color: var(--primary-dark);
+}
+.appt-month {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.appt-day {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.appt-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.appt-body strong {
+  color: var(--navy);
+}
+.appt-meta {
+  font-size: 0.88rem;
+  color: var(--muted-text);
+}
+.appt-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.empty-state {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--muted-text);
+  background: var(--white);
+  border: 1.5px dashed var(--soft-blue);
+  border-radius: 12px;
+}
+.empty-state p {
+  margin: 0 0 1rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .booking-layout {
+    grid-template-columns: 1fr;
+  }
+  .summary-card {
+    position: static;
+  }
+}
+@media (max-width: 560px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .appt-card {
+    flex-wrap: wrap;
+  }
+  .appt-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

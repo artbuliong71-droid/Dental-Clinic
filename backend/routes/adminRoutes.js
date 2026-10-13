@@ -6,6 +6,7 @@ const {
   updateUserStatus,
   getStats,
 } = require("../controllers/adminController");
+const { getStaff, createStaff } = require("../controllers/staffController");
 const { protect, authorize } = require("../middleware/authMiddleware");
 
 // Lahat ng routes dito ay Admin-only (may-ari lang, hindi staff)
@@ -17,5 +18,9 @@ router.patch(
   updateUserStatus,
 );
 router.get("/stats", protect, authorize("admin"), getStats);
+
+// Staff accounts (admin creates them; no more hardcoded staff)
+router.get("/staff", protect, authorize("admin"), getStaff);
+router.post("/staff", protect, authorize("admin"), createStaff);
 
 module.exports = router;

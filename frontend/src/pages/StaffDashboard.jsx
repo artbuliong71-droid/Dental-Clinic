@@ -2,13 +2,38 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getAllAppointments, updateAppointmentStatus } from "../api/adminApi";
 import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
+import AppointmentsManager from "../components/AppointmentsManager";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  CalendarCheck,
+  Hourglass,
+  Check,
+  ClipboardList,
+} from "lucide-react";
+import { todayStr } from "../utils/dateUtils";
+import "../components/dashboard.css";
+import "../components/manage.css";
 
 const StaffDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const [appointments, setAppointments] = useState([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [dataLoading, setDataLoading] = useState(true);
+  const [activeView, setActiveView] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const sidebarItems = [
+    { key: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
+    {
+      key: "appointments",
+      label: "Appointments",
+      icon: <CalendarDays size={18} />,
+    },
+  ];
 
   useEffect(() => {
     loadAppointments();
@@ -20,59 +45,139 @@ const StaffDashboard = () => {
       setAppointments(response.data);
     } catch (err) {
       setError("Failed to load appointments.");
+    } finally {
+      setDataLoading(false);
     }
   };
 
+  const changeView = (key) => {
+    setActiveView(key);
+    setSidebarOpen(false);
+    setError("");
+    setMessage("");
+  };
+
   const handleStatusUpdate = async (id, newStatus) => {
+    setError("");
     try {
       await updateAppointmentStatus(id, newStatus);
       setMessage(`Appointment marked as ${newStatus}`);
-      loadAppointments();
+      await loadAppointments();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to update status.");
     }
   };
 
+  const count = (status) =>
+    appointments.filter((a) => a.status === status).length;
+  const today = todayStr();
+  const todays = appointments.filter(
+    (a) =>
+      String(a.appointmentDate).slice(0, 10) === today &&
+      (a.status === "Pending" || a.status === "Confirmed"),
+  );
+
   return (
     <div>
-      <Navbar />
-      <div className="dashboard-container">
-        <p>You can view and manage appointments below.</p>
+      <Navbar onBurgerClick={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="layout-container">
+        <Sidebar
+          items={sidebarItems}
+          activeView={activeView}
+          setActiveView={changeView}
+          isOpen={sidebarOpen}
+        />
 
-        {error && <p className="error-message">{error}</p>}
-        {message && <p className="success-message">{message}</p>}
+        <div className="main-content">
+          {error && (
+            <p className="error-message banner" role="alert">
+              {error}
+            </p>
+          )}
+          {message && (
+            <p className="success-message banner" role="status">
+              {message}
+            </p>
+          )}
 
-        <h2>All Appointments</h2>
-        {appointments.length === 0 ? (
-          <p>No appointments yet.</p>
-        ) : (
-          <ul className="appointment-list">
-            {appointments.map((appt) => (
-              <li key={appt._id}>
-                <span>
-                  {appt.patient?.user?.name} — {appt.service?.name} with Dr.{" "}
-                  {appt.dentist?.user?.name} on{" "}
-                  {new Date(appt.appointmentDate).toLocaleDateString()} at{" "}
-                  {appt.appointmentTime} — <strong>{appt.status}</strong>
-                </span>
-                {appt.status === "Pending" && (
-                  <button
-                    onClick={() => handleStatusUpdate(appt._id, "Confirmed")}
-                  >
-                    Confirm
-                  </button>
-                )}
-                {appt.status === "Confirmed" && (
-                  <button
-                    onClick={() => handleStatusUpdate(appt._id, "Completed")}
-                  >
-                    Mark Completed
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+          {dataLoading ? (
+            <p className="muted">Loading appointments...</p>
+          ) : (
+            <>
+              {activeView === "overview" && (
+                <div>
+                  <h2>Welcome back, {user?.name?.split(" ")[0]}</h2>
+                  <p className="page-sub">
+                    Confirm requests and keep today's schedule moving.
+                  </p>
+
+                  <div className="stat-grid">
+                    <div className="stat-card">
+                      <div className="stat-info">
+                        <span className="stat-number">{todays.length}</span>
+                        <span className="stat-label">Today</span>
+                      </div>
+                      <span className="stat-icon-wrap">
+                        <CalendarCheck size={22} />
+                      </span>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-info">
+                        <span className="stat-number">{count("Pending")}</span>
+                        <span className="stat-label">
+                          Waiting for confirmation
+                        </span>
+                      </div>
+                      <span className="stat-icon-wrap">
+                        <Hourglass size={22} />
+                      </span>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-info">
+                        <span className="stat-number">
+                          {count("Confirmed")}
+                        </span>
+                        <span className="stat-label">Confirmed</span>
+                      </div>
+                      <span className="stat-icon-wrap">
+                        <ClipboardList size={22} />
+                      </span>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-info">
+                        <span className="stat-number">
+                          {count("Completed")}
+                        </span>
+                        <span className="stat-label">Completed</span>
+                      </div>
+                      <span className="stat-icon-wrap">
+                        <Check size={22} />
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="group-title">Today's appointments</h3>
+                  <AppointmentsManager
+                    appointments={todays}
+                    onStatusUpdate={handleStatusUpdate}
+                    showFilters={false}
+                    emptyText="No appointments scheduled for today."
+                  />
+                </div>
+              )}
+
+              {activeView === "appointments" && (
+                <div>
+                  <h2>All Appointments</h2>
+                  <AppointmentsManager
+                    appointments={appointments}
+                    onStatusUpdate={handleStatusUpdate}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

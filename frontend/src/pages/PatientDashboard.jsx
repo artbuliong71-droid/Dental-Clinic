@@ -6,8 +6,16 @@ import {
   LayoutDashboard,
   CalendarPlus,
   CalendarDays,
-  FileText,
+  ClipboardList,
   Hourglass,
+  Check,
+  Clock,
+  Sparkles,
+  Wrench,
+  Syringe,
+  Stethoscope,
+  Settings,
+  Smile,
 } from "lucide-react";
 import { getServices } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
@@ -16,25 +24,94 @@ import {
   getMyAppointments,
   cancelAppointment,
 } from "../api/appointmentsApi";
+import "../components/dashboard.css";
+
+/* ---------- Helpers ---------- */
+
+// Icon + short description per dental service (matched by name)
+const SERVICE_META = [
+  {
+    match: "prophylaxis",
+    icon: Sparkles,
+    desc: "Professional cleaning to remove plaque and tartar.",
+  },
+  {
+    match: "filling",
+    icon: Wrench,
+    desc: "Repairs a tooth damaged by a cavity.",
+  },
+  {
+    match: "extraction",
+    icon: Syringe,
+    desc: "Safe removal of a damaged or problem tooth.",
+  },
+  {
+    match: "check",
+    icon: Stethoscope,
+    desc: "Routine exam of your teeth and gums.",
+  },
+  {
+    match: "braces",
+    icon: Settings,
+    desc: "Adjustment and tightening for your braces.",
+  },
+];
+const getMeta = (name = "") =>
+  SERVICE_META.find((m) => name.toLowerCase().includes(m.match)) || {
+    icon: Smile,
+    desc: "",
+  };
+
+const peso = (n) => `₱${Number(n).toLocaleString()}`;
+
+// Local YYYY-MM-DD (used for the date input's min value)
+const todayStr = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+};
+const nowTimeStr = () => new Date().toTimeString().slice(0, 5);
+
+// Read the saved date as a plain calendar date (avoids timezone shifts)
+const parseDate = (value) => new Date(`${String(value).slice(0, 10)}T00:00:00`);
+const formatDate = (value) =>
+  parseDate(value).toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+const formatTime = (t) => {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+};
+const apptWhen = (a) =>
+  new Date(
+    `${String(a.appointmentDate).slice(0, 10)}T${a.appointmentTime || "00:00"}`,
+  );
+
+const emptyForm = {
+  dentist: "",
+  service: "",
+  appointmentDate: "",
+  appointmentTime: "",
+  reason: "",
+};
+
+/* ---------- Component ---------- */
 
 const PatientDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const [services, setServices] = useState([]);
   const [dentists, setDentists] = useState([]);
   const [appointments, setAppointments] = useState([]);
-
-  const [formData, setFormData] = useState({
-    dentist: "",
-    service: "",
-    appointmentDate: "",
-    appointmentTime: "",
-    reason: "",
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [activeView, setActiveView] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -52,7 +129,6 @@ const PatientDashboard = () => {
     },
   ];
 
-  // Kinukuha natin ang lahat ng kailangang data pagka-load ng page
   useEffect(() => {
     loadData();
   }, []);
@@ -69,29 +145,42 @@ const PatientDashboard = () => {
       setAppointments(appointmentsRes.data);
     } catch (err) {
       setError("Failed to load data. Please refresh the page.");
+    } finally {
+      setDataLoading(false);
     }
   };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const changeView = (key) => {
+    setActiveView(key);
+    setSidebarOpen(false); // close the sidebar after choosing (important on mobile)
+    setError("");
+    setMessage("");
   };
 
   const handleBookAppointment = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
-    setLoading(true);
 
+    if (!formData.service) return setError("Please choose a service.");
+    if (
+      formData.appointmentDate === todayStr() &&
+      formData.appointmentTime <= nowTimeStr()
+    ) {
+      return setError("Please choose a time that hasn't passed yet.");
+    }
+
+    setLoading(true);
     try {
       await bookAppointment(formData);
+      setFormData(emptyForm);
+      await loadData();
+      setActiveView("appointments");
       setMessage("Appointment booked successfully!");
-      setFormData({
-        dentist: "",
-        service: "",
-        appointmentDate: "",
-        appointmentTime: "",
-        reason: "",
-      });
-      loadData(); // i-refresh ang listahan ng appointments
     } catch (err) {
       setError(err.response?.data?.message || "Failed to book appointment.");
     } finally {
@@ -105,10 +194,67 @@ const PatientDashboard = () => {
 
     try {
       await cancelAppointment(id);
+      setMessage("Appointment cancelled.");
       loadData();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to cancel appointment.");
     }
+  };
+
+  /* ---------- Derived data ---------- */
+  const isActive = (a) => a.status === "Pending" || a.status === "Confirmed";
+  const upcoming = appointments
+    .filter(isActive)
+    .sort((a, b) => apptWhen(a) - apptWhen(b));
+  const history = appointments
+    .filter((a) => !isActive(a))
+    .sort((a, b) => apptWhen(b) - apptWhen(a));
+  const completedCount = appointments.filter(
+    (a) => a.status === "Completed",
+  ).length;
+  const nextAppt = upcoming[0];
+
+  const selectedService = services.find((s) => s._id === formData.service);
+  const selectedDentist = dentists.find((d) => d._id === formData.dentist);
+
+  /* ---------- Small render helpers ---------- */
+  const renderAppointment = (appt) => {
+    const date = parseDate(appt.appointmentDate);
+    const canCancel = isActive(appt);
+    return (
+      <li key={appt._id} className="appt-card">
+        <div className="appt-date" aria-hidden="true">
+          <span className="appt-month">
+            {date.toLocaleDateString("en-PH", { month: "short" })}
+          </span>
+          <span className="appt-day">{date.getDate()}</span>
+        </div>
+        <div className="appt-body">
+          <strong>{appt.service?.name}</strong>
+          <span className="appt-meta">
+            Dr. {appt.dentist?.user?.name} · {formatDate(appt.appointmentDate)}{" "}
+            at {formatTime(appt.appointmentTime)}
+          </span>
+          {appt.reason && (
+            <span className="appt-meta">Note: {appt.reason}</span>
+          )}
+        </div>
+        <div className="appt-actions">
+          <span className={`status-badge status-${appt.status.toLowerCase()}`}>
+            {appt.status}
+          </span>
+          {canCancel && (
+            <button
+              type="button"
+              className="btn-outline-danger"
+              onClick={() => handleCancel(appt._id)}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </li>
+    );
   };
 
   return (
@@ -118,154 +264,286 @@ const PatientDashboard = () => {
         <Sidebar
           items={sidebarItems}
           activeView={activeView}
-          setActiveView={(key) => {
-            setActiveView(key);
-            setSidebarOpen(false); // isara ang sidebar pagkatapos pumili (mahalaga sa mobile)
-          }}
+          setActiveView={changeView}
           isOpen={sidebarOpen}
         />
 
         <div className="main-content">
-          {error && <p className="error-message">{error}</p>}
-          {message && <p className="success-message">{message}</p>}
-
-          {activeView === "overview" && (
-            <div>
-              <h2>Overview</h2>
-              <p>Welcome back, {user?.name}!</p>
-              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                <div className="stat-card">
-                  <span className="stat-icon">📋</span>
-                  <div className="stat-info">
-                    <span className="stat-number">{appointments.length}</span>
-                    <span className="stat-label">Total Appointments</span>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <span className="stat-icon">⏳</span>
-                  <div className="stat-info">
-                    <span className="stat-number">
-                      {
-                        appointments.filter(
-                          (a) =>
-                            a.status === "Pending" || a.status === "Confirmed",
-                        ).length
-                      }
-                    </span>
-                    <span className="stat-label">Upcoming</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {error && (
+            <p className="error-message banner" role="alert">
+              {error}
+            </p>
+          )}
+          {message && (
+            <p className="success-message banner" role="status">
+              {message}
+            </p>
           )}
 
-          {activeView === "book" && (
-            <div>
-              <h2>Book an Appointment</h2>
-              <form onSubmit={handleBookAppointment} className="booking-form">
+          {dataLoading ? (
+            <p className="muted">Loading your dashboard...</p>
+          ) : (
+            <>
+              {/* ---------------- Overview ---------------- */}
+              {activeView === "overview" && (
                 <div>
-                  <label>Dentist</label>
-                  <select
-                    name="dentist"
-                    value={formData.dentist}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">-- Select Dentist --</option>
-                    {dentists.map((d) => (
-                      <option key={d._id} value={d._id}>
-                        {d.user?.name} ({d.specialization})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <h2>Welcome back, {user?.name?.split(" ")[0]}</h2>
+                  <p className="page-sub">
+                    Here's a summary of your dental visits.
+                  </p>
 
-                <div>
-                  <label>Service</label>
-                  <select
-                    name="service"
-                    value={formData.service}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">-- Select Service --</option>
-                    {services.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name} - ₱{s.price}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label>Date</label>
-                  <input
-                    type="date"
-                    name="appointmentDate"
-                    value={formData.appointmentDate}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label>Time</label>
-                  <input
-                    type="time"
-                    name="appointmentTime"
-                    value={formData.appointmentTime}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label>Reason (optional)</label>
-                  <input
-                    type="text"
-                    name="reason"
-                    value={formData.reason}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <button type="submit" disabled={loading}>
-                  {loading ? "Booking..." : "Book Appointment"}
-                </button>
-              </form>
-            </div>
-          )}
-
-          {activeView === "appointments" && (
-            <div>
-              <h2>My Appointments</h2>
-              {appointments.length === 0 ? (
-                <p>No appointments yet.</p>
-              ) : (
-                <ul className="appointment-list">
-                  {appointments.map((appt) => (
-                    <li key={appt._id}>
-                      <span>
-                        {appt.service?.name} with Dr. {appt.dentist?.user?.name}{" "}
-                        on {new Date(appt.appointmentDate).toLocaleDateString()}{" "}
-                        at {appt.appointmentTime} —{" "}
-                        <span
-                          className={`status-badge status-${appt.status.toLowerCase()}`}
-                        >
-                          {appt.status}
+                  <div className="stat-grid">
+                    <div className="stat-card">
+                      <div className="stat-info">
+                        <span className="stat-number">
+                          {appointments.length}
                         </span>
+                        <span className="stat-label">Total appointments</span>
+                      </div>
+                      <span className="stat-icon-wrap">
+                        <ClipboardList size={22} />
                       </span>
-                      {appt.status !== "Completed" &&
-                        appt.status !== "Cancelled" && (
-                          <button onClick={() => handleCancel(appt._id)}>
-                            Cancel
-                          </button>
-                        )}
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-info">
+                        <span className="stat-number">{upcoming.length}</span>
+                        <span className="stat-label">Upcoming</span>
+                      </div>
+                      <span className="stat-icon-wrap">
+                        <Hourglass size={22} />
+                      </span>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-info">
+                        <span className="stat-number">{completedCount}</span>
+                        <span className="stat-label">Completed</span>
+                      </div>
+                      <span className="stat-icon-wrap">
+                        <Check size={22} />
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="group-title">Next appointment</h3>
+                  {nextAppt ? (
+                    <ul className="appt-list">{renderAppointment(nextAppt)}</ul>
+                  ) : (
+                    <div className="empty-state">
+                      <p>You have no upcoming appointments.</p>
+                      <button
+                        type="button"
+                        className="btn-primary-sm"
+                        onClick={() => changeView("book")}
+                      >
+                        Book an appointment
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
+
+              {/* ---------------- Book ---------------- */}
+              {activeView === "book" && (
+                <div>
+                  <h2>Book an Appointment</h2>
+                  <p className="page-sub">
+                    Choose a service, then pick your dentist and schedule.
+                  </p>
+
+                  <form
+                    onSubmit={handleBookAppointment}
+                    className="booking-layout"
+                  >
+                    <div className="booking-main">
+                      <section className="form-section">
+                        <h3>Select a service</h3>
+                        {services.length === 0 ? (
+                          <p className="muted">
+                            No services are available yet. Please contact the
+                            clinic.
+                          </p>
+                        ) : (
+                          <div
+                            className="service-grid"
+                            role="radiogroup"
+                            aria-label="Dental service"
+                          >
+                            {services.map((s) => {
+                              const { icon: Icon, desc } = getMeta(s.name);
+                              const selected = formData.service === s._id;
+                              return (
+                                <label
+                                  key={s._id}
+                                  className={`service-card ${selected ? "selected" : ""}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="service"
+                                    value={s._id}
+                                    checked={selected}
+                                    onChange={handleChange}
+                                    className="sr-only"
+                                  />
+                                  <span className="service-icon">
+                                    <Icon size={22} />
+                                  </span>
+                                  <span className="service-name">{s.name}</span>
+                                  <span className="service-desc">
+                                    {s.description || desc}
+                                  </span>
+                                  <span className="service-price">
+                                    {peso(s.price)}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </section>
+
+                      <section className="form-section">
+                        <h3>Dentist and schedule</h3>
+                        <div className="form-grid">
+                          <div className="field field-wide">
+                            <label htmlFor="dentist">Dentist</label>
+                            <select
+                              id="dentist"
+                              name="dentist"
+                              value={formData.dentist}
+                              onChange={handleChange}
+                              required
+                            >
+                              <option value="">Select a dentist</option>
+                              {dentists.map((d) => (
+                                <option key={d._id} value={d._id}>
+                                  Dr. {d.user?.name} ({d.specialization})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="field">
+                            <label htmlFor="appointmentDate">Date</label>
+                            <input
+                              id="appointmentDate"
+                              type="date"
+                              name="appointmentDate"
+                              min={todayStr()}
+                              value={formData.appointmentDate}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                          <div className="field">
+                            <label htmlFor="appointmentTime">Time</label>
+                            <input
+                              id="appointmentTime"
+                              type="time"
+                              name="appointmentTime"
+                              value={formData.appointmentTime}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                          <div className="field field-wide">
+                            <label htmlFor="reason">Reason (optional)</label>
+                            <input
+                              id="reason"
+                              type="text"
+                              name="reason"
+                              maxLength={200}
+                              placeholder="e.g. Toothache on the lower left side"
+                              value={formData.reason}
+                              onChange={handleChange}
+                            />
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+
+                    <aside className="summary-card">
+                      <h3>Booking summary</h3>
+                      <dl>
+                        <dt>Service</dt>
+                        <dd>{selectedService?.name || "Not selected"}</dd>
+                        <dt>Dentist</dt>
+                        <dd>
+                          {selectedDentist
+                            ? `Dr. ${selectedDentist.user?.name}`
+                            : "Not selected"}
+                        </dd>
+                        <dt>Date</dt>
+                        <dd>
+                          {formData.appointmentDate
+                            ? formatDate(formData.appointmentDate)
+                            : "Not selected"}
+                        </dd>
+                        <dt>Time</dt>
+                        <dd>
+                          {formData.appointmentTime
+                            ? formatTime(formData.appointmentTime)
+                            : "Not selected"}
+                        </dd>
+                      </dl>
+                      <div className="summary-total">
+                        <span>Estimated price</span>
+                        <strong>
+                          {selectedService ? peso(selectedService.price) : "—"}
+                        </strong>
+                      </div>
+                      <button
+                        type="submit"
+                        className="btn-primary-sm block"
+                        disabled={loading}
+                      >
+                        {loading ? "Booking..." : "Confirm booking"}
+                      </button>
+                    </aside>
+                  </form>
+                </div>
+              )}
+
+              {/* ---------------- My appointments ---------------- */}
+              {activeView === "appointments" && (
+                <div>
+                  <h2>My Appointments</h2>
+
+                  {appointments.length === 0 ? (
+                    <div className="empty-state">
+                      <p>You haven't booked any appointments yet.</p>
+                      <button
+                        type="button"
+                        className="btn-primary-sm"
+                        onClick={() => changeView("book")}
+                      >
+                        Book an appointment
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="group-title">
+                        <Clock size={16} /> Upcoming
+                      </h3>
+                      {upcoming.length === 0 ? (
+                        <p className="muted">Nothing scheduled.</p>
+                      ) : (
+                        <ul className="appt-list">
+                          {upcoming.map(renderAppointment)}
+                        </ul>
+                      )}
+
+                      {history.length > 0 && (
+                        <>
+                          <h3 className="group-title">History</h3>
+                          <ul className="appt-list">
+                            {history.map(renderAppointment)}
+                          </ul>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
