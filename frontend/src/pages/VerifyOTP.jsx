@@ -1,15 +1,19 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { verifyOTP } from "../api/authApi";
+import { verifyOTP, resendOTP } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/AuthLayout";
 
 const OTP_LENGTH = 6;
+const RESEND_SECONDS = 60; // keep in sync with RESEND_COOLDOWN_MS in authController
 
 const VerifyOTP = () => {
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(""));
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(RESEND_SECONDS); // a code was just sent at login
   const inputsRef = useRef([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,6 +22,13 @@ const VerifyOTP = () => {
   // The email passed from the Login page
   const email = location.state?.email;
   const otp = digits.join("");
+
+  // Countdown for the resend button
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   const focusBox = (i) => inputsRef.current[i]?.focus();
 
@@ -53,9 +64,31 @@ const VerifyOTP = () => {
     focusBox(Math.min(pasted.length, OTP_LENGTH - 1));
   };
 
+  const handleResend = async () => {
+    setError("");
+    setInfo("");
+    setResending(true);
+
+    try {
+      await resendOTP(email);
+      setInfo("A new code has been sent to your email.");
+      setDigits(Array(OTP_LENGTH).fill(""));
+      setCooldown(RESEND_SECONDS);
+      focusBox(0);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Could not resend the code. Please try again.",
+      );
+    } finally {
+      setResending(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setInfo("");
 
     if (otp.length < OTP_LENGTH) {
       setError(`Enter the ${OTP_LENGTH}-digit code.`);
@@ -107,13 +140,19 @@ const VerifyOTP = () => {
       <h2 className="auth-title">Verify Your Identity</h2>
       <p className="auth-subtitle">
         We sent a {OTP_LENGTH}-digit code to{" "}
-        <strong className="otp-email">{email}</strong>. Please check your inbox.
+        <strong className="otp-email">{email}</strong>. Please check your inbox
+        (and your Spam folder).
       </p>
 
       <form onSubmit={handleSubmit} className="auth-form" noValidate>
         {error && (
           <p className="error-message" role="alert">
             {error}
+          </p>
+        )}
+        {info && (
+          <p className="info-message" role="status">
+            {info}
           </p>
         )}
 
@@ -152,6 +191,22 @@ const VerifyOTP = () => {
             </>
           )}
         </button>
+
+        <p className="resend-row">
+          Didn't get the code?{" "}
+          <button
+            type="button"
+            className="link-btn"
+            onClick={handleResend}
+            disabled={cooldown > 0 || resending}
+          >
+            {resending
+              ? "Sending..."
+              : cooldown > 0
+                ? `Resend in ${cooldown}s`
+                : "Resend code"}
+          </button>
+        </p>
 
         <p className="auth-switch">
           Wrong account? <Link to="/login">Back to Login</Link>

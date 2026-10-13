@@ -364,3 +364,33 @@
     font-size: 1.3rem;
   }
 }
+/* ---------- Resend code (append to the end of auth.css) ---------- */
+.resend-row {
+  margin: 18px 0 0;
+  text-align: center;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: #1f5aa8;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.link-btn:disabled {
+  color: #8a98b0;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+.auth-form .info-message {
+  margin: 0 0 4px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #eaf6ee;
+  color: #1f6b3a;
+  font-size: 0.92rem;
+}
