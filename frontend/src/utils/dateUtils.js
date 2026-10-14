@@ -29,5 +29,16 @@ export const todayStr = () => {
   return d.toISOString().slice(0, 10);
 };
 
+// "Dr. Germino" already has a title, so don't show "Dr. Dr. Germino"
+const TITLE = /^(dr|dra|doc)\.?\s+/i;
+export const dentistLabel = (name) =>
+  name ? (TITLE.test(name) ? name : `Dr. ${name}`) : "—";
+
+// "Dr. Juan Dela Cruz" -> "Dr. Juan", "Maria Santos" -> "Maria"
+export const greetingName = (name = "") => {
+  const parts = name.trim().split(/\s+/);
+  return TITLE.test(name) ? parts.slice(0, 2).join(" ") : parts[0] || "";
+};
+
 export const isActiveStatus = (status) =>
   status === "Pending" || status === "Confirmed";

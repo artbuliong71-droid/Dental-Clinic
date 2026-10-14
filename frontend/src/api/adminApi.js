@@ -25,3 +25,14 @@ export const createStaff = async (staffData) => {
   const response = await api.post("/admin/staff", staffData);
   return response.data;
 };
+
+// Patients + delete account (admin only)
+export const getPatients = async () => {
+  const response = await api.get("/admin/patients");
+  return response.data;
+};
+
+export const deleteAccount = async (id) => {
+  const response = await api.delete(`/admin/accounts/${id}`);
+  return response.data;
+};

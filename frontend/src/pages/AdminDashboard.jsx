@@ -8,8 +8,10 @@ import {
   CalendarDays,
   ClipboardList,
   Users,
+  UserCheck,
   Stethoscope,
   Hourglass,
+  CalendarCheck,
   Eye,
   EyeOff,
 } from "lucide-react";
@@ -19,9 +21,20 @@ import {
   updateAppointmentStatus,
   getStaffList,
   createStaff,
+  getPatients,
+  deleteAccount,
 } from "../api/adminApi";
 import { getServices, createService } from "../api/servicesApi";
-import { formatDate } from "../utils/dateUtils";
+import { getDentists } from "../api/dentistsApi";
+import CalendarView from "../components/CalendarView";
+import PatientsView from "../components/PatientsView";
+import DentistsView from "../components/DentistsView";
+import {
+  formatDate,
+  greetingName,
+  todayStr,
+  isActiveStatus,
+} from "../utils/dateUtils";
 import "../components/dashboard.css";
 import "../components/manage.css";
 
@@ -59,6 +72,8 @@ const AdminDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [dentists, setDentists] = useState([]);
 
   const [newService, setNewService] = useState(emptyService);
   const [staffForm, setStaffForm] = useState(emptyStaff);
@@ -74,18 +89,23 @@ const AdminDashboard = () => {
 
   const sidebarItems = [
     { key: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
+    { key: "schedule", label: "Schedule", icon: <CalendarCheck size={18} /> },
     {
       key: "appointments",
       label: "Appointments",
       icon: <CalendarDays size={18} />,
     },
     { key: "services", label: "Services", icon: <ClipboardList size={18} /> },
-    { key: "staff", label: "Staff Accounts", icon: <Users size={18} /> },
+    { key: "patients", label: "Patients", icon: <Users size={18} /> },
+    { key: "dentists", label: "Dentists", icon: <Stethoscope size={18} /> },
+    { key: "staff", label: "Staff Accounts", icon: <UserCheck size={18} /> },
   ];
 
   useEffect(() => {
     loadData();
     loadStaff();
+    loadPatients();
+    loadDentists();
   }, []);
 
   const loadData = async () => {
@@ -112,6 +132,46 @@ const AdminDashboard = () => {
       setStaff(res.data);
     } catch (err) {
       setStaff([]);
+    }
+  };
+
+  const loadPatients = async () => {
+    try {
+      const res = await getPatients();
+      setPatients(res.data);
+    } catch (err) {
+      setPatients([]);
+    }
+  };
+
+  const loadDentists = async () => {
+    try {
+      const res = await getDentists();
+      setDentists(res.data);
+    } catch (err) {
+      setDentists([]);
+    }
+  };
+
+  // Delete a staff or patient account (patients: their appointments are deleted too)
+  const handleDeleteAccount = async (account, reload, appointmentCount = 0) => {
+    const extra =
+      appointmentCount > 0
+        ? ` This also deletes their ${appointmentCount} appointment${appointmentCount === 1 ? "" : "s"}.`
+        : "";
+    if (
+      !window.confirm(`Delete ${account.name}?${extra} This can't be undone.`)
+    )
+      return;
+
+    setError("");
+    setMessage("");
+    try {
+      await deleteAccount(account._id);
+      setMessage(`${account.name} was deleted.`);
+      await Promise.all([reload(), loadData()]); // refresh the list, stats and appointments
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete the account.");
     }
   };
 
@@ -227,6 +287,11 @@ const AdminDashboard = () => {
 
   const byStatus = stats?.appointmentsByStatus || {};
   const pending = appointments.filter((a) => a.status === "Pending");
+  const todays = appointments.filter(
+    (a) =>
+      String(a.appointmentDate).slice(0, 10) === todayStr() &&
+      isActiveStatus(a.status),
+  );
 
   return (
     <div>
@@ -258,7 +323,7 @@ const AdminDashboard = () => {
               {/* ---------------- Overview ---------------- */}
               {activeView === "overview" && (
                 <div>
-                  <h2>Welcome back, {user?.name?.split(" ")[0]}</h2>
+                  <h2>Welcome back, {greetingName(user?.name)}</h2>
                   <p className="page-sub">
                     Here's what's happening at the clinic.
                   </p>
@@ -328,6 +393,16 @@ const AdminDashboard = () => {
                   </div>
 
                   <h3 className="group-title">
+                    <CalendarCheck size={16} /> Today's schedule
+                  </h3>
+                  <AppointmentsManager
+                    appointments={todays}
+                    onStatusUpdate={handleStatusUpdate}
+                    showFilters={false}
+                    emptyText="No appointments scheduled for today."
+                  />
+
+                  <h3 className="group-title">
                     <Hourglass size={16} /> Waiting for confirmation
                   </h3>
                   <AppointmentsManager
@@ -335,6 +410,20 @@ const AdminDashboard = () => {
                     onStatusUpdate={handleStatusUpdate}
                     showFilters={false}
                     emptyText="All caught up. No pending appointments."
+                  />
+                </div>
+              )}
+
+              {/* ---------------- Schedule (calendar) ---------------- */}
+              {activeView === "schedule" && (
+                <div>
+                  <h2>Schedule</h2>
+                  <p className="page-sub">
+                    Pick a day to see and manage its appointments.
+                  </p>
+                  <CalendarView
+                    appointments={appointments}
+                    onStatusUpdate={handleStatusUpdate}
                   />
                 </div>
               )}
@@ -464,6 +553,34 @@ const AdminDashboard = () => {
                 </div>
               )}
 
+              {/* ---------------- Patients ---------------- */}
+              {activeView === "patients" && (
+                <div>
+                  <h2>Patients</h2>
+                  <p className="page-sub">
+                    Deleting a patient also removes their appointments.
+                  </p>
+                  <PatientsView
+                    patients={patients}
+                    appointments={appointments}
+                    onDelete={(p, apptCount) =>
+                      handleDeleteAccount(p, loadPatients, apptCount)
+                    }
+                  />
+                </div>
+              )}
+
+              {/* ---------------- Dentists ---------------- */}
+              {activeView === "dentists" && (
+                <div>
+                  <h2>Dentists</h2>
+                  <p className="page-sub">
+                    Dentists patients can choose when booking.
+                  </p>
+                  <DentistsView dentists={dentists} />
+                </div>
+              )}
+
               {/* ---------------- Staff accounts ---------------- */}
               {activeView === "staff" && (
                 <div>
@@ -566,8 +683,8 @@ const AdminDashboard = () => {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Status</th>
                             <th>Added</th>
+                            <th className="col-action">Action</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -578,15 +695,19 @@ const AdminDashboard = () => {
                               </td>
                               <td data-label="Email">{s.email}</td>
                               <td data-label="Phone">{s.phone || "—"}</td>
-                              <td data-label="Status">
-                                <span
-                                  className={`status-badge ${s.isActive === false ? "status-cancelled" : "status-completed"}`}
-                                >
-                                  {s.isActive === false ? "Inactive" : "Active"}
-                                </span>
-                              </td>
                               <td data-label="Added">
                                 {s.createdAt ? formatDate(s.createdAt) : "—"}
+                              </td>
+                              <td data-label="Action" className="col-action">
+                                <button
+                                  type="button"
+                                  className="btn-outline-danger"
+                                  onClick={() =>
+                                    handleDeleteAccount(s, loadStaff)
+                                  }
+                                >
+                                  Delete
+                                </button>
                               </td>
                             </tr>
                           ))}
