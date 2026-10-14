@@ -3,6 +3,7 @@ const Patient = require("../models/Patient");
 const Dentist = require("../models/Dentist");
 const DentalService = require("../models/DentalService");
 const asyncHandler = require("../utils/asyncHandler");
+const { isClosed } = require("../utils/clinicSchedule");
 
 // @desc    Patient books a new appointment
 // @route   POST /api/appointments
@@ -28,6 +29,11 @@ const createAppointment = asyncHandler(async (req, res) => {
   if (!serviceExists || !serviceExists.isActive) {
     res.status(404);
     throw new Error("Dental service not found or no longer offered");
+  }
+  const closure = await isClosed(appointmentDate);
+  if (closure.closed) {
+    res.status(400);
+    throw new Error(`The clinic is closed on this date (${closure.reason}).`);
   }
 
   // I-check kung may existing na appointment na sa parehong dentist, petsa, at oras (double-booking check)
@@ -146,13 +152,11 @@ const updateAppointmentStatus = asyncHandler(async (req, res) => {
 
   await appointment.save();
 
-  res
-    .status(200)
-    .json({
-      success: true,
-      message: "Appointment status updated",
-      data: appointment,
-    });
+  res.status(200).json({
+    success: true,
+    message: "Appointment status updated",
+    data: appointment,
+  });
 });
 
 // @desc    Patient reschedules their own appointment
@@ -205,13 +209,11 @@ const rescheduleAppointment = asyncHandler(async (req, res) => {
 
   await appointment.save();
 
-  res
-    .status(200)
-    .json({
-      success: true,
-      message: "Appointment rescheduled",
-      data: appointment,
-    });
+  res.status(200).json({
+    success: true,
+    message: "Appointment rescheduled",
+    data: appointment,
+  });
 });
 
 // @desc    Patient cancels their own appointment
@@ -242,13 +244,11 @@ const cancelAppointment = asyncHandler(async (req, res) => {
     req.body.cancellationReason || "Cancelled by patient";
   await appointment.save();
 
-  res
-    .status(200)
-    .json({
-      success: true,
-      message: "Appointment cancelled",
-      data: appointment,
-    });
+  res.status(200).json({
+    success: true,
+    message: "Appointment cancelled",
+    data: appointment,
+  });
 });
 
 module.exports = {

@@ -3,6 +3,13 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import AppointmentsManager from "../components/AppointmentsManager";
+import ClosedDatesView from "../components/ClosedDatesView";
+import {
+  getClosedDates,
+  addClosedDate,
+  deleteClosedDate,
+} from "../api/closedDatesApi";
+
 import {
   LayoutDashboard,
   CalendarDays,
@@ -12,6 +19,7 @@ import {
   Stethoscope,
   Hourglass,
   CalendarCheck,
+  CalendarX,
   Eye,
   EyeOff,
 } from "lucide-react";
@@ -74,6 +82,8 @@ const AdminDashboard = () => {
   const [staff, setStaff] = useState([]);
   const [patients, setPatients] = useState([]);
   const [dentists, setDentists] = useState([]);
+  const [closedDates, setClosedDates] = useState([]);
+  const [closureForm, setClosureForm] = useState({ date: "", reason: "" });
 
   const [newService, setNewService] = useState(emptyService);
   const [staffForm, setStaffForm] = useState(emptyStaff);
@@ -90,6 +100,7 @@ const AdminDashboard = () => {
   const sidebarItems = [
     { key: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
     { key: "schedule", label: "Schedule", icon: <CalendarCheck size={18} /> },
+    { key: "closures", label: "Closed Dates", icon: <CalendarX size={18} /> },
     {
       key: "appointments",
       label: "Appointments",
@@ -106,6 +117,7 @@ const AdminDashboard = () => {
     loadStaff();
     loadPatients();
     loadDentists();
+    loadClosedDates();
   }, []);
 
   const loadData = async () => {
@@ -152,7 +164,61 @@ const AdminDashboard = () => {
       setDentists([]);
     }
   };
+  const loadClosedDates = async () => {
+    try {
+      const res = await getClosedDates();
+      setClosedDates(res.data);
+    } catch (err) {
+      setClosedDates([]);
+    }
+  };
 
+  const submitClosure = async (force = false) => {
+    setError("");
+    setMessage("");
+    setSaving(true);
+    try {
+      await addClosedDate({ ...closureForm, force });
+      setMessage("Closed date added.");
+      setClosureForm({ date: "", reason: "" });
+      await loadClosedDates();
+    } catch (err) {
+      const data = err.response?.data;
+      if (err.response?.status === 409 && data?.appointmentCount) {
+        setSaving(false);
+        if (
+          window.confirm(
+            `${data.message} Close this day anyway? You'll need to cancel or reschedule them yourself.`,
+          )
+        ) {
+          return submitClosure(true);
+        }
+        return;
+      }
+      setError(data?.message || "Failed to add the closed date.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddClosure = (e) => {
+    e.preventDefault();
+    if (!closureForm.date) return setError("Please pick a date.");
+    submitClosure(false);
+  };
+
+  const handleDeleteClosure = async (c) => {
+    if (!window.confirm(`Reopen the clinic on ${formatDate(c.date)}?`)) return;
+    try {
+      await deleteClosedDate(c._id);
+      setMessage("Closed date removed.");
+      await loadClosedDates();
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to remove the closed date.",
+      );
+    }
+  };
   // Delete a staff or patient account (patients: their appointments are deleted too)
   const handleDeleteAccount = async (account, reload, appointmentCount = 0) => {
     const extra =
@@ -427,7 +493,73 @@ const AdminDashboard = () => {
                   />
                 </div>
               )}
+              {/* ---------------- Closed dates ---------------- */}
+              {activeView === "closures" && (
+                <div>
+                  <h2>Closed Dates</h2>
+                  <p className="page-sub">
+                    Patients can't book on these dates. Sundays are always
+                    closed.
+                  </p>
 
+                  <form
+                    onSubmit={handleAddClosure}
+                    className="form-section"
+                    noValidate
+                  >
+                    <h3>Add a closed date</h3>
+                    <div className="form-grid">
+                      <div className="field">
+                        <label htmlFor="closure-date">Date</label>
+                        <input
+                          id="closure-date"
+                          type="date"
+                          min={todayStr()}
+                          value={closureForm.date}
+                          onChange={(e) =>
+                            setClosureForm({
+                              ...closureForm,
+                              date: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label htmlFor="closure-reason">
+                          Reason (optional)
+                        </label>
+                        <input
+                          id="closure-reason"
+                          type="text"
+                          maxLength={200}
+                          placeholder="e.g. Holy Week, Holiday"
+                          value={closureForm.reason}
+                          onChange={(e) =>
+                            setClosureForm({
+                              ...closureForm,
+                              reason: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="form-actions">
+                      <button
+                        type="submit"
+                        className="btn-primary-sm"
+                        disabled={saving}
+                      >
+                        {saving ? "Saving..." : "Add closed date"}
+                      </button>
+                    </div>
+                  </form>
+
+                  <ClosedDatesView
+                    closedDates={closedDates}
+                    onDelete={handleDeleteClosure}
+                  />
+                </div>
+              )}
               {/* ---------------- Appointments ---------------- */}
               {activeView === "appointments" && (
                 <div>

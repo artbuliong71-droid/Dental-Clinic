@@ -4,10 +4,13 @@ import { getAllAppointments, updateAppointmentStatus } from "../api/adminApi";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import AppointmentsManager from "../components/AppointmentsManager";
+import ClosedDatesView from "../components/ClosedDatesView";
+import { getClosedDates } from "../api/closedDatesApi";
 import {
   LayoutDashboard,
   CalendarDays,
   CalendarCheck,
+  CalendarX,
   Hourglass,
   Check,
   ClipboardList,
@@ -20,6 +23,7 @@ const StaffDashboard = () => {
   const { user } = useAuth();
 
   const [appointments, setAppointments] = useState([]);
+  const [closedDates, setClosedDates] = useState([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [dataLoading, setDataLoading] = useState(true);
@@ -33,10 +37,14 @@ const StaffDashboard = () => {
       label: "Appointments",
       icon: <CalendarDays size={18} />,
     },
+    { key: "closures", label: "Closed Dates", icon: <CalendarX size={18} /> },
   ];
 
   useEffect(() => {
     loadAppointments();
+    getClosedDates()
+      .then((res) => setClosedDates(res.data))
+      .catch(() => setClosedDates([]));
   }, []);
 
   const loadAppointments = async () => {
@@ -173,6 +181,15 @@ const StaffDashboard = () => {
                     appointments={appointments}
                     onStatusUpdate={handleStatusUpdate}
                   />
+                </div>
+              )}
+              {activeView === "closures" && (
+                <div>
+                  <h2>Closed Dates</h2>
+                  <p className="page-sub">
+                    Days the clinic is closed. Sundays are always closed.
+                  </p>
+                  <ClosedDatesView closedDates={closedDates} />
                 </div>
               )}
             </>

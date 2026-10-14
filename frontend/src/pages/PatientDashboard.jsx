@@ -24,6 +24,8 @@ import {
   getMyAppointments,
   cancelAppointment,
 } from "../api/appointmentsApi";
+import { getClosedDates } from "../api/closedDatesApi";
+import { closedInfo } from "../utils/closedDays";
 import "../components/dashboard.css";
 
 /* ---------- Helpers ---------- */
@@ -106,6 +108,7 @@ const PatientDashboard = () => {
   const [services, setServices] = useState([]);
   const [dentists, setDentists] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [closedDates, setClosedDates] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
 
   const [message, setMessage] = useState("");
@@ -131,6 +134,9 @@ const PatientDashboard = () => {
 
   useEffect(() => {
     loadData();
+    getClosedDates()
+      .then((res) => setClosedDates(res.data))
+      .catch(() => setClosedDates([]));
   }, []);
 
   const loadData = async () => {
@@ -151,7 +157,19 @@ const PatientDashboard = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "appointmentDate" && value) {
+      const info = closedInfo(value, closedDates);
+      if (info) {
+        setError(
+          `The clinic is closed on ${formatDate(value)} (${info.reason}). Please pick another date.`,
+        );
+        setFormData({ ...formData, appointmentDate: "" });
+        return;
+      }
+      setError("");
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const changeView = (key) => {
@@ -167,6 +185,9 @@ const PatientDashboard = () => {
     setMessage("");
 
     if (!formData.service) return setError("Please choose a service.");
+    if (closedInfo(formData.appointmentDate, closedDates)) {
+      return setError("The clinic is closed on the selected date.");
+    }
     if (
       formData.appointmentDate === todayStr() &&
       formData.appointmentTime <= nowTimeStr()
@@ -432,6 +453,10 @@ const PatientDashboard = () => {
                               onChange={handleChange}
                               required
                             />
+                            <p className="form-hint">
+                              Closed on Sundays and on holidays set by the
+                              clinic.
+                            </p>
                           </div>
                           <div className="field">
                             <label htmlFor="appointmentTime">Time</label>

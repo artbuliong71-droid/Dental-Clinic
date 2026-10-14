@@ -31,6 +31,7 @@ app.use("/api/appointments", require("./routes/appointmentRoutes"));
 app.use("/api/patients", require("./routes/patientRoutes"));
 app.use("/api/dentists", require("./routes/dentistRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/closed-dates", require("./routes/closedDateRoutes"));
 
 app.use(notFound);
 app.use(errorHandler);

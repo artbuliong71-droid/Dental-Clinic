@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const Patient = require("../models/Patient");
+const ClinicalNote = require("../models/ClinicalNote");
 
 // GET /api/admin/patients — list all patient accounts
 const getPatients = async (req, res) => {
@@ -31,7 +32,7 @@ const getPatients = async (req, res) => {
 };
 
 // DELETE /api/admin/accounts/:id — delete a staff or patient account
-// Deleting a patient also deletes their patient profile and all their appointments.
+// Deleting a patient also deletes their patient profile, medical records and all their appointments.
 const deleteAccount = async (req, res) => {
   try {
     const { id } = req.params;
@@ -62,6 +63,9 @@ const deleteAccount = async (req, res) => {
     let deletedAppointments = 0;
 
     if (user.role === "patient") {
+      // Clinical notes go with the patient (the medical info lives on the Patient document)
+      await ClinicalNote.deleteMany({ user: user._id });
+
       const patient = await Patient.findOne({ user: user._id });
       if (patient) {
         // Uses the "appointments" collection directly, so no Appointment model import is needed

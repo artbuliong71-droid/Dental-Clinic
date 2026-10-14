@@ -24,16 +24,6 @@ const patientSchema = new mongoose.Schema(
       trim: true,
       maxlength: [250, "Address cannot exceed 250 characters"],
     },
-    medicalHistory: {
-      type: String,
-      trim: true,
-      maxlength: [1000, "Medical history cannot exceed 1000 characters"],
-      default: "",
-    },
-    emergencyContact: {
-      name: { type: String, trim: true },
-      phone: { type: String, trim: true },
-    },
   },
   {
     timestamps: true,
