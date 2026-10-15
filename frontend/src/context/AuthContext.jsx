@@ -7,27 +7,34 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Tuwing mag-lo-load ang app (o mag-rerefresh ang page), tingnan natin
-  // kung may naka-save na nang login info sa localStorage.
+  // kung may naka-save nang login info sa sessionStorage.
+  // Nabubura ito kapag isinara ang tab, kaya login ulit ang kailangan.
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
+    try {
+      const storedUser = sessionStorage.getItem("user");
+      const storedToken = sessionStorage.getItem("token");
 
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
+      if (storedUser && storedToken) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (err) {
+      // Sira ang naka-save na data, burahin
+      sessionStorage.removeItem("user");
+      sessionStorage.removeItem("token");
     }
     setLoading(false);
   }, []);
 
   // Tinatawag ito pagkatapos ng successful na verify-otp
   const login = (userData, token) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
+    sessionStorage.setItem("token", token);
+    sessionStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     setUser(null);
   };
 
