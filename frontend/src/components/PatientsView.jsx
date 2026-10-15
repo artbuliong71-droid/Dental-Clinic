@@ -7,7 +7,7 @@ import "./manage.css";
 const patientIdOf = (a) =>
   a.patient && typeof a.patient === "object" ? a.patient._id : a.patient;
 
-const PatientsView = ({ patients, appointments, onDelete }) => {
+const PatientsView = ({ patients, appointments, onOpen, onDelete }) => {
   const [query, setQuery] = useState("");
 
   const counts = useMemo(() => {
@@ -67,7 +67,13 @@ const PatientsView = ({ patients, appointments, onDelete }) => {
               {visible.map((p) => (
                 <tr key={p._id}>
                   <td data-label="Name">
-                    <strong>{p.name}</strong>
+                    <button
+                      type="button"
+                      className="name-link"
+                      onClick={() => onOpen(p)}
+                    >
+                      {p.name}
+                    </button>
                   </td>
                   <td data-label="Email">{p.email}</td>
                   <td data-label="Phone">{p.phone || "—"}</td>
@@ -76,13 +82,22 @@ const PatientsView = ({ patients, appointments, onDelete }) => {
                     {p.createdAt ? formatDate(p.createdAt) : "—"}
                   </td>
                   <td data-label="Action" className="col-action">
-                    <button
-                      type="button"
-                      className="btn-outline-danger"
-                      onClick={() => onDelete(p, counts[p.patientId] || 0)}
-                    >
-                      Delete
-                    </button>
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        className="btn-primary-sm sm"
+                        onClick={() => onOpen(p)}
+                      >
+                        View record
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-outline-danger"
+                        onClick={() => onDelete(p, counts[p.patientId] || 0)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

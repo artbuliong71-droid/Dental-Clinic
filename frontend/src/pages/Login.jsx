@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { loginUser } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/AuthLayout";
 
 const MailIcon = () => (
@@ -51,6 +52,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,7 +69,7 @@ const Login = () => {
       await loginUser(email, password);
       // Not logged in yet — the OTP still needs to be verified.
       // Pass the email along to the verify-otp page.
-      navigate("/verify-otp", { state: { email } });
+      navigate("/verify-otp", { state: { email }, replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message || "Login failed. Please try again.",
@@ -76,6 +78,17 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Already logged in? Go straight to the dashboard
+  if (user) {
+    const home =
+      user.role === "admin"
+        ? "/admin"
+        : user.role === "staff"
+          ? "/staff"
+          : "/dashboard";
+    return <Navigate to={home} replace />;
+  }
 
   return (
     <AuthLayout>

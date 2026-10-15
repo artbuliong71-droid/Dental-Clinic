@@ -16,6 +16,8 @@ import {
   Stethoscope,
   Settings,
   Smile,
+  User,
+  FileText,
 } from "lucide-react";
 import { getServices } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
@@ -26,6 +28,10 @@ import {
 } from "../api/appointmentsApi";
 import { getClosedDates } from "../api/closedDatesApi";
 import { closedInfo } from "../utils/closedDays";
+import { dentistLabel, greetingName } from "../utils/dateUtils";
+import { getMyRecords, updateMyProfile } from "../api/recordsApi";
+import MedicalProfileForm from "../components/MedicalProfileForm";
+import MyRecords from "../components/MyRecords";
 import "../components/dashboard.css";
 
 /* ---------- Helpers ---------- */
@@ -110,6 +116,9 @@ const PatientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [closedDates, setClosedDates] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
+  const [profile, setProfile] = useState(null);
+  const [notes, setNotes] = useState([]);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -130,10 +139,13 @@ const PatientDashboard = () => {
       label: "My Appointments",
       icon: <CalendarDays size={18} />,
     },
+    { key: "records", label: "My Records", icon: <FileText size={18} /> },
+    { key: "profile", label: "My Profile", icon: <User size={18} /> },
   ];
 
   useEffect(() => {
     loadData();
+    loadRecords();
     getClosedDates()
       .then((res) => setClosedDates(res.data))
       .catch(() => setClosedDates([]));
@@ -170,6 +182,32 @@ const PatientDashboard = () => {
       setError("");
     }
     setFormData({ ...formData, [name]: value });
+  };
+
+  // Medical profile + the dentist's notes (optional: the rest works even if this fails)
+  const loadRecords = async () => {
+    try {
+      const res = await getMyRecords();
+      setProfile(res.data.profile);
+      setNotes(res.data.notes);
+    } catch (err) {
+      /* ignore */
+    }
+  };
+
+  const handleSaveProfile = async (data) => {
+    setError("");
+    setMessage("");
+    setSavingProfile(true);
+    try {
+      const res = await updateMyProfile(data);
+      setProfile(res.data);
+      setMessage("Profile saved.");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save your profile.");
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const changeView = (key) => {
@@ -253,8 +291,9 @@ const PatientDashboard = () => {
         <div className="appt-body">
           <strong>{appt.service?.name}</strong>
           <span className="appt-meta">
-            Dr. {appt.dentist?.user?.name} · {formatDate(appt.appointmentDate)}{" "}
-            at {formatTime(appt.appointmentTime)}
+            {dentistLabel(appt.dentist?.user?.name)} ·{" "}
+            {formatDate(appt.appointmentDate)} at{" "}
+            {formatTime(appt.appointmentTime)}
           </span>
           {appt.reason && (
             <span className="appt-meta">Note: {appt.reason}</span>
@@ -308,7 +347,7 @@ const PatientDashboard = () => {
               {/* ---------------- Overview ---------------- */}
               {activeView === "overview" && (
                 <div>
-                  <h2>Welcome back, {user?.name?.split(" ")[0]}</h2>
+                  <h2>Welcome back, {greetingName(user?.name)}</h2>
                   <p className="page-sub">
                     Here's a summary of your dental visits.
                   </p>
@@ -437,7 +476,8 @@ const PatientDashboard = () => {
                               <option value="">Select a dentist</option>
                               {dentists.map((d) => (
                                 <option key={d._id} value={d._id}>
-                                  Dr. {d.user?.name} ({d.specialization})
+                                  {dentistLabel(d.user?.name)} (
+                                  {d.specialization})
                                 </option>
                               ))}
                             </select>
@@ -493,7 +533,7 @@ const PatientDashboard = () => {
                         <dt>Dentist</dt>
                         <dd>
                           {selectedDentist
-                            ? `Dr. ${selectedDentist.user?.name}`
+                            ? dentistLabel(selectedDentist.user?.name)
                             : "Not selected"}
                         </dd>
                         <dt>Date</dt>
@@ -524,6 +564,35 @@ const PatientDashboard = () => {
                       </button>
                     </aside>
                   </form>
+                </div>
+              )}
+
+              {/* ---------------- My records ---------------- */}
+              {activeView === "records" && (
+                <div>
+                  <h2>My Records</h2>
+                  <p className="page-sub">
+                    Your past visits and the treatment your dentist recorded.
+                  </p>
+                  <MyRecords appointments={appointments} notes={notes} />
+                </div>
+              )}
+
+              {/* ---------------- My profile ---------------- */}
+              {activeView === "profile" && (
+                <div>
+                  <h2>My Profile</h2>
+                  <p className="page-sub">
+                    Keep your personal details up to date.
+                  </p>
+                  <div className="form-section">
+                    <MedicalProfileForm
+                      profile={profile}
+                      onSave={handleSaveProfile}
+                      saving={savingProfile}
+                      submitLabel="Save profile"
+                    />
+                  </div>
                 </div>
               )}
 

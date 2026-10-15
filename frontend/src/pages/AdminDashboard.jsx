@@ -9,7 +9,6 @@ import {
   addClosedDate,
   deleteClosedDate,
 } from "../api/closedDatesApi";
-
 import {
   LayoutDashboard,
   CalendarDays,
@@ -36,6 +35,7 @@ import { getServices, createService } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
 import CalendarView from "../components/CalendarView";
 import PatientsView from "../components/PatientsView";
+import PatientRecord from "../components/PatientRecord";
 import DentistsView from "../components/DentistsView";
 import {
   formatDate,
@@ -82,6 +82,7 @@ const AdminDashboard = () => {
   const [staff, setStaff] = useState([]);
   const [patients, setPatients] = useState([]);
   const [dentists, setDentists] = useState([]);
+  const [openPatient, setOpenPatient] = useState(null);
   const [closedDates, setClosedDates] = useState([]);
   const [closureForm, setClosureForm] = useState({ date: "", reason: "" });
 
@@ -164,6 +165,7 @@ const AdminDashboard = () => {
       setDentists([]);
     }
   };
+
   const loadClosedDates = async () => {
     try {
       const res = await getClosedDates();
@@ -219,6 +221,7 @@ const AdminDashboard = () => {
       );
     }
   };
+
   // Delete a staff or patient account (patients: their appointments are deleted too)
   const handleDeleteAccount = async (account, reload, appointmentCount = 0) => {
     const extra =
@@ -243,6 +246,7 @@ const AdminDashboard = () => {
 
   const changeView = (key) => {
     setActiveView(key);
+    setOpenPatient(null);
     setSidebarOpen(false);
     setError("");
     setMessage("");
@@ -493,6 +497,7 @@ const AdminDashboard = () => {
                   />
                 </div>
               )}
+
               {/* ---------------- Closed dates ---------------- */}
               {activeView === "closures" && (
                 <div>
@@ -560,6 +565,7 @@ const AdminDashboard = () => {
                   />
                 </div>
               )}
+
               {/* ---------------- Appointments ---------------- */}
               {activeView === "appointments" && (
                 <div>
@@ -688,17 +694,29 @@ const AdminDashboard = () => {
               {/* ---------------- Patients ---------------- */}
               {activeView === "patients" && (
                 <div>
-                  <h2>Patients</h2>
-                  <p className="page-sub">
-                    Deleting a patient also removes their appointments.
-                  </p>
-                  <PatientsView
-                    patients={patients}
-                    appointments={appointments}
-                    onDelete={(p, apptCount) =>
-                      handleDeleteAccount(p, loadPatients, apptCount)
-                    }
-                  />
+                  {openPatient ? (
+                    <PatientRecord
+                      patient={openPatient}
+                      appointments={appointments}
+                      onBack={() => setOpenPatient(null)}
+                    />
+                  ) : (
+                    <>
+                      <h2>Patients</h2>
+                      <p className="page-sub">
+                        Open a patient to see their medical info and visit
+                        history.
+                      </p>
+                      <PatientsView
+                        patients={patients}
+                        appointments={appointments}
+                        onOpen={setOpenPatient}
+                        onDelete={(p, apptCount) =>
+                          handleDeleteAccount(p, loadPatients, apptCount)
+                        }
+                      />
+                    </>
+                  )}
                 </div>
               )}
 

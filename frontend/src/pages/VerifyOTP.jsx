@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link, Navigate } from "react-router-dom";
 import { verifyOTP, resendOTP } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/AuthLayout";
@@ -17,7 +17,7 @@ const VerifyOTP = () => {
   const inputsRef = useRef([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
 
   // The email passed from the Login page
   const email = location.state?.email;
@@ -105,11 +105,11 @@ const VerifyOTP = () => {
       // Different dashboard depending on role
       const role = response.data.user.role;
       if (role === "admin") {
-        navigate("/admin");
+        navigate("/admin", { replace: true });
       } else if (role === "staff") {
-        navigate("/staff");
+        navigate("/staff", { replace: true });
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     } catch (err) {
       setError(
@@ -121,7 +121,16 @@ const VerifyOTP = () => {
       setLoading(false);
     }
   };
-
+  // Already logged in? Don't show the OTP page again
+  if (user) {
+    const home =
+      user.role === "admin"
+        ? "/admin"
+        : user.role === "staff"
+          ? "/staff"
+          : "/dashboard";
+    return <Navigate to={home} replace />;
+  }
   // No email (e.g. opened this page directly without logging in)
   if (!email) {
     return (

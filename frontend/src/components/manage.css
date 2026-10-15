@@ -377,3 +377,186 @@
     padding: 0.3rem;
   }
 }
+/* ---------- Patient records ---------- */
+.field textarea {
+  width: 100%;
+  min-height: 84px;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+  resize: vertical;
+  color: var(--dark-text);
+  background: #fff;
+  border: 1.5px solid var(--soft-blue);
+  border-radius: 8px;
+}
+.field textarea:focus {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.name-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--navy);
+  cursor: pointer;
+  text-align: left;
+}
+.name-link:hover {
+  color: var(--primary-blue);
+  text-decoration: underline;
+}
+.row-actions {
+  display: inline-flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.record-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+.record-head h2 {
+  margin: 0;
+}
+.record-head .page-sub {
+  margin: 0.3rem 0 0;
+}
+.record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  background: #fff;
+  color: var(--primary-dark);
+  border: 1.5px solid var(--soft-blue);
+}
+.btn-ghost:hover {
+  border-color: var(--primary-blue);
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.section-head h3 {
+  margin: 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+.info-grid dt {
+  font-size: 0.78rem;
+  color: var(--muted-text);
+}
+.info-grid dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+  color: var(--dark-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.info-wide {
+  grid-column: 1 / -1;
+}
+
+.visit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.8rem;
+}
+.visit {
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid var(--soft-blue);
+  border-radius: 12px;
+}
+.visit-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.visit-head strong {
+  color: var(--navy);
+}
+.visit-meta {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--muted-text);
+}
+.visit-body {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--soft-blue);
+}
+.visit-actions {
+  margin-top: 0.8rem;
+}
+.private-note {
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.private-note p {
+  margin: 0.2rem 0 0;
+  white-space: pre-wrap;
+}
+.print-only {
+  display: none;
+}
+
+@media print {
+  .navbar,
+  .sidebar,
+  .no-print,
+  .banner,
+  .private-note {
+    display: none !important;
+  }
+  .layout-container {
+    display: block;
+  }
+  .main-content {
+    max-width: none;
+    padding: 0;
+  }
+  body {
+    background: #fff;
+  }
+  .print-only {
+    display: block;
+    margin-bottom: 1rem;
+  }
+  .form-section,
+  .visit {
+    break-inside: avoid;
+  }
+}
