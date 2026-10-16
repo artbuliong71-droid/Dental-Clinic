@@ -1,0 +1,13 @@
+/* Germino-Punzal Dental Clinic: shared colors. Import once in main.jsx */
+:root {
+  --gp-ink: #2a0f4a; /* deepest purple: headings, footer */
+  --gp-primary: #4b1d86; /* buttons, links */
+  --gp-primary-hover: #3a1569;
+  --gp-mid: #7b2cbf; /* accents from the logo */
+  --gp-soft: #ede3f8; /* tinted backgrounds */
+  --gp-wash: #f7f2fc; /* page background */
+  --gp-line: #e2d5f2; /* borders */
+  --gp-text: #3a3350; /* body text */
+  --gp-muted: #7a7194; /* secondary text */
+  --gp-font: "Montserrat", "Segoe UI", system-ui, sans-serif;
+}

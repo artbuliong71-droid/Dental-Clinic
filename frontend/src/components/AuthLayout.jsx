@@ -1,40 +1,22 @@
+// src/components/AuthLayout.jsx
 import "./auth.css";
-
-const ToothLogo = () => (
-  <svg
-    viewBox="0 0 64 64"
-    width="56"
-    height="56"
-    fill="none"
-    aria-hidden="true"
-  >
-    <path
-      d="M10 20c0-8 8-11 15-8 4 2 6 2 10 0 5-2 11-1 12 6 1 7-3 11-4 18-1 7-3 14-6 14-4 0-3-11-8-11s-4 11-8 11c-3 0-5-7-6-14-1-7-5-9-5-16z"
-      stroke="#3f7fc8"
-      strokeWidth="4"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M50 4l2.5 6.5L59 13l-6.5 2.5L50 22l-2.5-6.5L41 13l6.5-2.5z"
-      fill="#3f7fc8"
-    />
-  </svg>
-);
+// Change this path if your logo lives somewhere else.
+import logo from "../assets/logo.jpg";
 
 const Tooth = () => (
   <svg className="brand-tooth" viewBox="0 0 220 240" aria-hidden="true">
     <defs>
       <radialGradient id="toothFill" cx="40%" cy="25%" r="80%">
         <stop offset="0" stopColor="#ffffff" />
-        <stop offset="0.6" stopColor="#e6f0fc" />
-        <stop offset="1" stopColor="#bcd4f0" />
+        <stop offset="0.6" stopColor="#f1e8fb" />
+        <stop offset="1" stopColor="#d3bdf0" />
       </radialGradient>
       <linearGradient id="ring" x1="0" x2="1">
-        <stop offset="0" stopColor="#6fb2ea" />
-        <stop offset="1" stopColor="#bfe0fa" />
+        <stop offset="0" stopColor="#8e3bb8" />
+        <stop offset="1" stopColor="#c9a2ec" />
       </linearGradient>
     </defs>
-    <ellipse cx="110" cy="228" rx="60" ry="8" fill="#9bbfe6" opacity=".35" />
+    <ellipse cx="110" cy="228" rx="60" ry="8" fill="#9a6fc8" opacity=".35" />
     <g transform="rotate(-20 110 130)">
       <path
         d="M15 130A95 28 0 0 1 205 130"
@@ -71,9 +53,11 @@ const AuthLayout = ({ children }) => (
   <div className="auth-page">
     <section className="auth-side">
       <div className="auth-card">
-        <div className="auth-logo">
-          <ToothLogo />
-        </div>
+        <img
+          src={logo}
+          alt="Germino-Punzal Dental Clinic logo"
+          className="auth-logo"
+        />
         {children}
       </div>
     </section>
@@ -86,7 +70,8 @@ const AuthLayout = ({ children }) => (
       <Hex className="hex-c" />
       <div className="brand-wave" />
       <div className="brand-content">
-        <h1>GERMINO</h1>
+        <img src={logo} alt="" className="brand-logo" />
+        <h1>GERMINO-PUNZAL</h1>
         <h2>DENTAL CLINIC</h2>
         <p>
           Healthy Smiles <span>•</span> Brighter Futures

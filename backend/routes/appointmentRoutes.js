@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
   createAppointment,
+  getAvailableSlots,
   getMyAppointments,
   getAllAppointments,
   getAppointmentById,
@@ -32,6 +33,8 @@ router.post(
 
 // Patient — makita ang sariling appointments
 router.get("/my", protect, authorize("patient"), getMyAppointments);
+
+router.get("/slots", protect, getAvailableSlots);
 
 // Admin/Staff — makita LAHAT ng appointments
 router.get("/", protect, authorize("admin", "staff"), getAllAppointments);

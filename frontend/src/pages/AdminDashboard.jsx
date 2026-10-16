@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import AppointmentsManager from "../components/AppointmentsManager";
 import ClosedDatesView from "../components/ClosedDatesView";
+import PatientRecord from "../components/PatientRecord";
 import {
   getClosedDates,
   addClosedDate,
@@ -19,6 +20,7 @@ import {
   Hourglass,
   CalendarCheck,
   CalendarX,
+  FileText,
   Eye,
   EyeOff,
 } from "lucide-react";
@@ -35,10 +37,11 @@ import { getServices, createService } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
 import CalendarView from "../components/CalendarView";
 import PatientsView from "../components/PatientsView";
-import PatientRecord from "../components/PatientRecord";
 import DentistsView from "../components/DentistsView";
 import {
   formatDate,
+  formatTime,
+  dentistLabel,
   greetingName,
   todayStr,
   isActiveStatus,
@@ -47,10 +50,15 @@ import "../components/dashboard.css";
 import "../components/manage.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const NAME_REGEX = /^\p{L}[\p{L}\s.'-]*$/u;
+const PHONE_REGEX = /^09\d{9}$/;
 
 const validateStaff = ({ name, email, password, phone }) => {
   const errors = {};
   if (!name.trim()) errors.name = "Full name is required.";
+  else if (!NAME_REGEX.test(name.trim()))
+    errors.name =
+      "Name can only contain letters, spaces, apostrophes, hyphens and periods.";
   if (!email.trim()) errors.email = "Email is required.";
   else if (!EMAIL_REGEX.test(email.trim()))
     errors.email = "Enter a valid email, like name@example.com.";
@@ -59,8 +67,8 @@ const validateStaff = ({ name, email, password, phone }) => {
     errors.password = "Password must be at least 8 characters.";
   else if (!/[A-Za-z]/.test(password) || !/\d/.test(password))
     errors.password = "Password must include both letters and numbers.";
-  if (phone && !/^\d{11}$/.test(phone))
-    errors.phone = "Phone number must be exactly 11 digits.";
+  if (phone && !PHONE_REGEX.test(phone))
+    errors.phone = "Phone number must be 11 digits and start with 09.";
   return errors;
 };
 
@@ -85,6 +93,7 @@ const AdminDashboard = () => {
   const [openPatient, setOpenPatient] = useState(null);
   const [closedDates, setClosedDates] = useState([]);
   const [closureForm, setClosureForm] = useState({ date: "", reason: "" });
+  const [recordPatient, setRecordPatient] = useState(null);
 
   const [newService, setNewService] = useState(emptyService);
   const [staffForm, setStaffForm] = useState(emptyStaff);
@@ -107,6 +116,7 @@ const AdminDashboard = () => {
       label: "Appointments",
       icon: <CalendarDays size={18} />,
     },
+    { key: "records", label: "Service Records", icon: <FileText size={18} /> },
     { key: "services", label: "Services", icon: <ClipboardList size={18} /> },
     { key: "patients", label: "Patients", icon: <Users size={18} /> },
     { key: "dentists", label: "Dentists", icon: <Stethoscope size={18} /> },
@@ -246,6 +256,7 @@ const AdminDashboard = () => {
 
   const changeView = (key) => {
     setActiveView(key);
+    setRecordPatient(null);
     setOpenPatient(null);
     setSidebarOpen(false);
     setError("");
@@ -576,6 +587,91 @@ const AdminDashboard = () => {
                   />
                 </div>
               )}
+              {activeView === "records" &&
+                (recordPatient ? (
+                  <PatientRecord
+                    patient={recordPatient}
+                    appointments={appointments}
+                    onBack={() => setRecordPatient(null)}
+                  />
+                ) : (
+                  <div>
+                    <h2>Service Records</h2>
+                    <p className="page-sub">
+                      Completed visits. Open one to see or edit the patient's
+                      record.
+                    </p>
+                    {(() => {
+                      const done = appointments
+                        .filter(
+                          (a) => a.status === "Completed" && a.patient?.user,
+                        )
+                        .sort((a, b) =>
+                          String(b.appointmentDate).localeCompare(
+                            String(a.appointmentDate),
+                          ),
+                        );
+                      return done.length === 0 ? (
+                        <div className="empty-state">
+                          <p>No completed visits yet.</p>
+                        </div>
+                      ) : (
+                        <div className="table-wrap">
+                          <table className="data-table">
+                            <thead>
+                              <tr>
+                                <th>Patient</th>
+                                <th>Service</th>
+                                <th>Dentist</th>
+                                <th>Date</th>
+                                <th className="col-action">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {done.map((a) => (
+                                <tr key={a._id}>
+                                  <td data-label="Patient">
+                                    <strong>{a.patient.user.name}</strong>
+                                  </td>
+                                  <td data-label="Service">
+                                    {a.service?.name}
+                                  </td>
+                                  <td data-label="Dentist">
+                                    {dentistLabel(a.dentist?.user?.name)}
+                                  </td>
+                                  <td data-label="Date">
+                                    {formatDate(a.appointmentDate)}{" "}
+                                    {formatTime(a.appointmentTime)}
+                                  </td>
+                                  <td
+                                    data-label="Action"
+                                    className="col-action"
+                                  >
+                                    <button
+                                      type="button"
+                                      className="btn-primary-sm"
+                                      onClick={() =>
+                                        setRecordPatient({
+                                          _id: a.patient.user._id,
+                                          patientId: a.patient._id,
+                                          name: a.patient.user.name,
+                                          email: a.patient.user.email,
+                                          phone: a.patient.user.phone,
+                                        })
+                                      }
+                                    >
+                                      Open record
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ))}
 
               {/* ---------------- Services ---------------- */}
               {activeView === "services" && (

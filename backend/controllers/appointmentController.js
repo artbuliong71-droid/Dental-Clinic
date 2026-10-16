@@ -3,7 +3,11 @@ const Patient = require("../models/Patient");
 const Dentist = require("../models/Dentist");
 const DentalService = require("../models/DentalService");
 const asyncHandler = require("../utils/asyncHandler");
-const { isClosed } = require("../utils/clinicSchedule");
+const {
+  isClosed,
+  getAllSlots,
+  isValidSlot,
+} = require("../utils/clinicSchedule");
 
 // @desc    Patient books a new appointment
 // @route   POST /api/appointments
@@ -30,10 +34,18 @@ const createAppointment = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Dental service not found or no longer offered");
   }
+
+  // Block kung sarado ang clinic sa petsang iyon
   const closure = await isClosed(appointmentDate);
   if (closure.closed) {
     res.status(400);
     throw new Error(`The clinic is closed on this date (${closure.reason}).`);
+  }
+
+  // Dapat nasa oras ng clinic (9:00 AM hanggang 3:00 PM)
+  if (!isValidSlot(appointmentTime)) {
+    res.status(400);
+    throw new Error("Please choose a time between 9:00 AM and 3:00 PM.");
   }
 
   // I-check kung may existing na appointment na sa parehong dentist, petsa, at oras (double-booking check)
@@ -63,6 +75,38 @@ const createAppointment = asyncHandler(async (req, res) => {
     .status(201)
     .json({ success: true, message: "Appointment booked", data: appointment });
 });
+
+// @desc    Available time slots for a dentist on a date
+// @route   GET /api/appointments/slots?dentist=ID&date=YYYY-MM-DD
+const getAvailableSlots = asyncHandler(async (req, res) => {
+  const { dentist, date } = req.query;
+  if (!dentist || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    res.status(400);
+    throw new Error("Dentist and a valid date (YYYY-MM-DD) are required.");
+  }
+
+  const closure = await isClosed(date);
+  if (closure.closed) {
+    return res.json({
+      success: true,
+      closed: true,
+      reason: closure.reason,
+      data: [],
+    });
+  }
+
+  const taken = await Appointment.find({
+    dentist,
+    appointmentDate: date,
+    status: { $in: ["Pending", "Confirmed"] },
+  }).select("appointmentTime");
+
+  const takenTimes = new Set(taken.map((a) => a.appointmentTime));
+  const data = getAllSlots().filter((t) => !takenTimes.has(t));
+
+  res.json({ success: true, closed: false, data });
+});
+
 // @desc    Patient views their own appointments
 // @route   GET /api/appointments/my
 const getMyAppointments = asyncHandler(async (req, res) => {
@@ -134,6 +178,7 @@ const getAppointmentById = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, data: appointment });
 });
+
 // @desc    Admin/Staff updates appointment status (Confirmed, Completed, Cancelled)
 // @route   PATCH /api/appointments/:id/status
 const updateAppointmentStatus = asyncHandler(async (req, res) => {
@@ -186,6 +231,19 @@ const rescheduleAppointment = asyncHandler(async (req, res) => {
     throw new Error(
       `Cannot reschedule an appointment that is already ${appointment.status.toLowerCase()}`,
     );
+  }
+
+  // Block kung sarado ang clinic sa bagong petsa
+  const closure = await isClosed(appointmentDate);
+  if (closure.closed) {
+    res.status(400);
+    throw new Error(`The clinic is closed on this date (${closure.reason}).`);
+  }
+
+  // Dapat nasa oras ng clinic (9:00 AM hanggang 3:00 PM)
+  if (!isValidSlot(appointmentTime)) {
+    res.status(400);
+    throw new Error("Please choose a time between 9:00 AM and 3:00 PM.");
   }
 
   // I-check ulit kung may conflict sa bagong petsa/oras (parehong logic ng createAppointment)
@@ -253,6 +311,7 @@ const cancelAppointment = asyncHandler(async (req, res) => {
 
 module.exports = {
   createAppointment,
+  getAvailableSlots,
   getMyAppointments,
   getAllAppointments,
   getAppointmentById,

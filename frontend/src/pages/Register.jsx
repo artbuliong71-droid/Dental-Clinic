@@ -20,11 +20,20 @@ const EyeIcon = ({ off }) => (
 );
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+// Letters (including ñ, é, etc.), spaces, apostrophes, hyphens and periods only. No numbers.
+const NAME_REGEX = /^\p{L}[\p{L}\s.'-]*$/u;
+// Philippine mobile number: 11 digits, starts with 09
+const PHONE_REGEX = /^09\d{9}$/;
 
 const validate = ({ name, email, password, phone }) => {
   const errors = {};
 
   if (!name.trim()) errors.name = "Full name is required.";
+  else if (name.trim().length < 2)
+    errors.name = "Name must be at least 2 characters.";
+  else if (!NAME_REGEX.test(name.trim()))
+    errors.name =
+      "Name can only contain letters, spaces, apostrophes, hyphens and periods.";
 
   if (!email.trim()) errors.email = "Email is required.";
   else if (!EMAIL_REGEX.test(email.trim()))
@@ -36,9 +45,10 @@ const validate = ({ name, email, password, phone }) => {
   else if (!/[A-Za-z]/.test(password) || !/\d/.test(password))
     errors.password = "Password must include both letters and numbers.";
 
-  // Phone is optional, but if filled in it must be exactly 11 digits.
-  if (phone && !/^\d{11}$/.test(phone))
-    errors.phone = "Phone number must be exactly 11 digits.";
+  // Phone is optional, but if filled in it must be 11 digits starting with 09.
+  if (phone && !PHONE_REGEX.test(phone))
+    errors.phone =
+      "Phone number must be 11 digits and start with 09 (e.g. 09171234567).";
 
   return errors;
 };
@@ -143,7 +153,9 @@ const Register = () => {
   return (
     <AuthLayout>
       <h2 className="auth-title">Create an Account</h2>
-      <p className="auth-subtitle">Register as a Germino Dental patient</p>
+      <p className="auth-subtitle">
+        Register as a Germino-Punzal Dental patient
+      </p>
 
       <form onSubmit={handleSubmit} className="auth-form" noValidate>
         {error && (
@@ -160,7 +172,7 @@ const Register = () => {
           "password",
           "At least 8 characters, letters and numbers",
         )}
-        {field("phone", "Phone Number", "tel", "11-digit phone number", {
+        {field("phone", "Phone Number", "tel", "09XXXXXXXXX", {
           inputMode: "numeric",
         })}
 

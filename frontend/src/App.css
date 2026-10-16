@@ -1,14 +1,20 @@
 :root {
-  --primary-blue: #4a90d9;
-  --primary-dark: #3a78b5;
-  --light-blue: #eaf4fd;
-  --soft-blue: #cfe8fb;
-  --dark-text: #2d3748;
-  --muted-text: #718096;
+  --primary: #7b1fa2;
+  --primary-dark: #5e1580;
+  --deep: #3b1782;
+  --light: #f4eefb;
+  --soft: #e0d3f3;
+  --dark-text: #2d2347;
+  --muted-text: #6f6590;
   --white: #ffffff;
   --success-green: #2f855a;
   --error-red: #c53030;
-  --radius: 10px;
+  --radius: 12px;
+
+  /* legacy names, so any old inline use keeps working */
+  --primary-blue: var(--primary);
+  --light-blue: var(--light);
+  --soft-blue: var(--soft);
 }
 
 * {
@@ -17,8 +23,8 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background-color: var(--light-blue);
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--light);
   color: var(--dark-text);
 }
 
@@ -28,17 +34,133 @@ h3 {
   margin: 0;
 }
 
-/* --- Navbar --- */
+:focus-visible {
+  outline: 3px solid rgba(123, 31, 162, 0.35);
+  outline-offset: 2px;
+}
+
+/* --- Shared messages --- */
+.error-message {
+  color: var(--error-red);
+  text-align: center;
+  font-size: 0.88rem;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin: 0 0 0.5rem;
+}
+
+.success-message {
+  color: var(--success-green);
+  text-align: center;
+  font-weight: 600;
+  background: #f0fff4;
+  border: 1px solid #c6f6d5;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+/* --- LEGACY auth styles (VerifyOTP, until it uses AuthLayout) --- */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f6f1fc, #ece2f9);
+}
+
+.auth-container .auth-form {
+  background-color: var(--white);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(91, 33, 150, 0.15);
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-container .auth-logo {
+  display: flex;
+  justify-content: center;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.auth-container .auth-form h2 {
+  text-align: center;
+  color: var(--deep);
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+}
+
+.auth-container .auth-form label {
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--deep);
+}
+
+.auth-container .auth-form input,
+.auth-container .auth-form select {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid var(--soft);
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.auth-container .auth-form input:focus,
+.auth-container .auth-form select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(123, 31, 162, 0.15);
+}
+
+.auth-container .auth-form button[type="submit"] {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.85rem;
+  background-color: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-container .auth-form button[type="submit"]:hover {
+  background-color: var(--primary-dark);
+}
+
+.auth-container .auth-form button[type="submit"]:disabled {
+  background-color: #b7a9cf;
+  cursor: not-allowed;
+}
+
+.auth-container .auth-form p {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted-text);
+}
+
+/* ===================================== */
+/* DASHBOARD                             */
+/* ===================================== */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--primary-blue);
+  background: linear-gradient(90deg, #3b1782, #7b1fa2);
   color: var(--white);
-  padding: 0.9rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   position: sticky;
   top: 0;
   z-index: 20;
+  box-shadow: 0 2px 12px rgba(59, 23, 130, 0.25);
 }
 
 .navbar-left {
@@ -47,8 +169,16 @@ h3 {
   gap: 0.75rem;
 }
 
+.navbar-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+}
+
 .navbar h1 {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -67,10 +197,10 @@ h3 {
 
 .navbar button {
   background-color: var(--white);
-  color: var(--primary-blue);
+  color: var(--primary);
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   display: flex;
@@ -80,7 +210,7 @@ h3 {
 }
 
 .navbar button:hover {
-  background-color: var(--soft-blue);
+  background-color: var(--soft);
 }
 
 .burger-btn {
@@ -92,123 +222,15 @@ h3 {
   padding: 0.2rem;
 }
 
-/* --- Shared messages (used by Login, Register, VerifyOTP) --- */
-.error-message {
-  color: var(--error-red);
-  text-align: center;
-  font-size: 0.88rem;
-  background: #fff5f5;
-  border: 1px solid #fed7d7;
-  padding: 0.5rem;
-  border-radius: 6px;
-}
-
-.success-message {
-  color: var(--success-green);
-  text-align: center;
-  font-weight: 600;
-  background: #f0fff4;
-  border: 1px solid #c6f6d5;
-  padding: 0.5rem;
-  border-radius: 6px;
-}
-
-/* --- LEGACY auth styles (only for pages still using .auth-container,
-       e.g. VerifyOTP). Delete this whole block once VerifyOTP uses
-       the new AuthLayout. --- */
-.auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 1rem;
-}
-
-.auth-container .auth-form {
-  background-color: var(--white);
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(74, 144, 217, 0.18);
-  width: 100%;
-  max-width: 380px;
-}
-
-.auth-container .auth-logo {
-  display: flex;
-  justify-content: center;
-  color: var(--primary-blue);
-  margin-bottom: 0.5rem;
-}
-
-.auth-container .auth-form h2 {
-  text-align: center;
-  color: var(--primary-blue);
-  margin-bottom: 1.5rem;
-  font-size: 1.3rem;
-}
-
-.auth-container .auth-form label {
-  display: block;
-  margin-top: 1rem;
-  margin-bottom: 0.3rem;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--muted-text);
-}
-
-.auth-container .auth-form input,
-.auth-container .auth-form select {
-  width: 100%;
-  padding: 0.65rem 0.8rem;
-  border: 1.5px solid var(--soft-blue);
-  border-radius: 8px;
-  font-size: 1rem;
-}
-
-.auth-container .auth-form input:focus,
-.auth-container .auth-form select:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-}
-
-.auth-container .auth-form button[type="submit"] {
-  width: 100%;
-  margin-top: 1.5rem;
-  padding: 0.75rem;
-  background-color: var(--primary-blue);
-  color: var(--white);
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.auth-container .auth-form button[type="submit"]:hover {
-  background-color: var(--primary-dark);
-}
-
-.auth-container .auth-form button[type="submit"]:disabled {
-  background-color: #a0aec0;
-  cursor: not-allowed;
-}
-
-.auth-container .auth-form p {
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--muted-text);
-}
-
-/* --- Dashboard Layout --- */
 .layout-container {
   display: flex;
   min-height: calc(100vh - 60px);
 }
 
 .sidebar {
-  width: 230px;
+  width: 240px;
   background-color: var(--white);
-  border-right: 1px solid var(--soft-blue);
+  border-right: 1px solid var(--soft);
   padding: 1.25rem 0.75rem;
   flex-shrink: 0;
   display: flex;
@@ -223,7 +245,7 @@ h3 {
 
 .sidebar-logout {
   color: var(--error-red);
-  border-top: 1px solid var(--soft-blue);
+  border-top: 1px solid var(--soft);
   margin-top: 1rem;
   padding-top: 1rem;
 }
@@ -241,7 +263,7 @@ h3 {
   padding: 0.7rem 1rem;
   background: none;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.95rem;
   color: var(--dark-text);
   cursor: pointer;
@@ -249,13 +271,14 @@ h3 {
 }
 
 .sidebar-item:hover {
-  background-color: var(--light-blue);
+  background-color: var(--light);
 }
 
 .sidebar-item.active {
-  background-color: var(--primary-blue);
+  background: linear-gradient(90deg, #7b1fa2, #8e3bb8);
   color: var(--white);
   font-weight: 600;
+  box-shadow: 0 4px 12px rgba(123, 31, 162, 0.25);
 }
 
 .main-content {
@@ -266,15 +289,15 @@ h3 {
 }
 
 .main-content h2 {
-  color: var(--primary-blue);
-  font-size: 1.4rem;
+  color: var(--deep);
+  font-size: 1.5rem;
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-/* --- Stat Cards --- */
+/* --- Stat cards --- */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -284,10 +307,10 @@ h3 {
 
 .stat-card {
   background-color: var(--white);
-  border: 1px solid var(--soft-blue);
+  border: 1px solid var(--soft);
   border-radius: var(--radius);
   padding: 1.1rem 1.3rem;
-  box-shadow: 0 2px 8px rgba(74, 144, 217, 0.08);
+  box-shadow: 0 4px 14px rgba(91, 33, 150, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -299,9 +322,9 @@ h3 {
 }
 
 .stat-number {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  color: var(--dark-text);
+  color: var(--deep);
   line-height: 1.1;
 }
 
@@ -311,18 +334,18 @@ h3 {
 }
 
 .stat-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background-color: var(--light-blue);
-  color: var(--primary-blue);
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background-color: var(--light);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-/* --- Appointment List --- */
+/* --- Appointment list --- */
 .appointment-list {
   list-style: none;
   padding: 0;
@@ -331,7 +354,7 @@ h3 {
 
 .appointment-list li {
   background-color: var(--white);
-  border: 1px solid var(--soft-blue);
+  border: 1px solid var(--soft);
   border-radius: var(--radius);
   padding: 0.9rem 1.2rem;
   margin-bottom: 0.7rem;
@@ -351,11 +374,11 @@ h3 {
 }
 
 .appointment-list button {
-  background-color: var(--primary-blue);
+  background-color: var(--primary);
   color: var(--white);
   border: none;
   padding: 0.4rem 1rem;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
@@ -368,16 +391,17 @@ h3 {
   background-color: var(--primary-dark);
 }
 
-/* --- Booking Form --- */
+/* --- Booking form --- */
 .booking-form {
   background-color: var(--white);
-  border: 1px solid var(--soft-blue);
+  border: 1px solid var(--soft);
   border-radius: var(--radius);
   padding: 1.5rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1rem;
   align-items: end;
+  box-shadow: 0 4px 14px rgba(91, 33, 150, 0.06);
 }
 
 .booking-form label {
@@ -387,24 +411,31 @@ h3 {
   font-size: 0.82rem;
   font-weight: 600;
   margin-bottom: 0.3rem;
-  color: var(--muted-text);
+  color: var(--deep);
 }
 
 .booking-form input,
 .booking-form select {
   width: 100%;
-  padding: 0.55rem;
-  border: 1.5px solid var(--soft-blue);
-  border-radius: 8px;
+  padding: 0.6rem;
+  border: 1.5px solid var(--soft);
+  border-radius: 10px;
   font-size: 0.95rem;
 }
 
+.booking-form input:focus,
+.booking-form select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(123, 31, 162, 0.15);
+}
+
 .booking-form button {
-  background-color: var(--primary-blue);
+  background-color: var(--primary);
   color: var(--white);
   border: none;
-  padding: 0.65rem 1.5rem;
-  border-radius: 8px;
+  padding: 0.7rem 1.5rem;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
   display: flex;
@@ -417,7 +448,7 @@ h3 {
   background-color: var(--primary-dark);
 }
 
-/* --- Status Badges --- */
+/* --- Status badges --- */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -435,8 +466,8 @@ h3 {
   color: #92400e;
 }
 .status-confirmed {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #ede0fb;
+  color: #5e1580;
 }
 .status-completed {
   background-color: #d1fae5;
@@ -465,14 +496,10 @@ h3 {
   padding: 0.5rem 1rem 0.3rem;
 }
 
-/* ============================= */
-/* RESPONSIVE: Tablet and below  */
-/* ============================= */
+/* ===================================== */
+/* RESPONSIVE                            */
+/* ===================================== */
 @media (max-width: 768px) {
-  .navbar-user span {
-    display: none;
-  }
-
   .sidebar {
     position: fixed;
     top: 56px;
@@ -497,9 +524,6 @@ h3 {
   }
 }
 
-/* ============================= */
-/* RESPONSIVE: Phones            */
-/* ============================= */
 @media (max-width: 480px) {
   .navbar {
     padding: 0.75rem 1rem;
@@ -509,10 +533,7 @@ h3 {
     font-size: 1.05rem;
   }
 
-  .stat-grid {
-    grid-template-columns: 1fr;
-  }
-
+  .stat-grid,
   .booking-form {
     grid-template-columns: 1fr;
   }

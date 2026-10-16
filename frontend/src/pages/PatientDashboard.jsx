@@ -25,6 +25,7 @@ import {
   bookAppointment,
   getMyAppointments,
   cancelAppointment,
+  getAvailableSlots,
 } from "../api/appointmentsApi";
 import { getClosedDates } from "../api/closedDatesApi";
 import { closedInfo } from "../utils/closedDays";
@@ -115,6 +116,8 @@ const PatientDashboard = () => {
   const [dentists, setDentists] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [closedDates, setClosedDates] = useState([]);
+  const [slots, setSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
   const [profile, setProfile] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -150,6 +153,42 @@ const PatientDashboard = () => {
       .then((res) => setClosedDates(res.data))
       .catch(() => setClosedDates([]));
   }, []);
+
+  // Kunin ang bakanteng oras tuwing magbabago ang dentist o petsa
+  useEffect(() => {
+    const { dentist, appointmentDate } = formData;
+    if (!dentist || !appointmentDate) {
+      setSlots([]);
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    getAvailableSlots(dentist, appointmentDate)
+      .then((res) => {
+        if (cancelled) return;
+        let list = res.data;
+        // Itago ang oras na lumipas na kung ngayong araw
+        if (appointmentDate === todayStr()) {
+          list = list.filter((t) => t > nowTimeStr());
+        }
+        setSlots(list);
+        // Kung hindi na available ang napiling oras, i-clear
+        setFormData((prev) =>
+          list.includes(prev.appointmentTime)
+            ? prev
+            : { ...prev, appointmentTime: "" },
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setSlots([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSlotsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.dentist, formData.appointmentDate]);
 
   const loadData = async () => {
     try {
@@ -225,6 +264,9 @@ const PatientDashboard = () => {
     if (!formData.service) return setError("Please choose a service.");
     if (closedInfo(formData.appointmentDate, closedDates)) {
       return setError("The clinic is closed on the selected date.");
+    }
+    if (!formData.appointmentTime) {
+      return setError("Please choose an available time.");
     }
     if (
       formData.appointmentDate === todayStr() &&
@@ -494,20 +536,41 @@ const PatientDashboard = () => {
                               required
                             />
                             <p className="form-hint">
-                              Closed on Sundays and on holidays set by the
-                              clinic.
+                              Closed on holidays set by the clinic.
                             </p>
                           </div>
                           <div className="field">
                             <label htmlFor="appointmentTime">Time</label>
-                            <input
+                            <select
                               id="appointmentTime"
-                              type="time"
                               name="appointmentTime"
                               value={formData.appointmentTime}
                               onChange={handleChange}
                               required
-                            />
+                              disabled={
+                                !formData.dentist ||
+                                !formData.appointmentDate ||
+                                slotsLoading
+                              }
+                            >
+                              <option value="">
+                                {!formData.dentist || !formData.appointmentDate
+                                  ? "Pick a dentist and date first"
+                                  : slotsLoading
+                                    ? "Loading..."
+                                    : slots.length === 0
+                                      ? "No available time"
+                                      : "Select a time"}
+                              </option>
+                              {slots.map((t) => (
+                                <option key={t} value={t}>
+                                  {formatTime(t)}
+                                </option>
+                              ))}
+                            </select>
+                            <p className="form-hint">
+                              Clinic hours: 9:00 AM to 3:00 PM.
+                            </p>
                           </div>
                           <div className="field field-wide">
                             <label htmlFor="reason">Reason (optional)</label>

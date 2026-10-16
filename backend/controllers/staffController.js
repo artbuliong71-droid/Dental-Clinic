@@ -1,6 +1,8 @@
 const User = require("../models/User");
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const NAME_REGEX = /^\p{L}[\p{L}\s.'-]*$/u; // letters, spaces, ' - . only (no numbers)
+const PHONE_REGEX = /^09\d{9}$/; // 11 digits, starts with 09
 
 // GET /api/admin/staff — list all staff accounts
 const getStaff = async (req, res) => {
@@ -30,6 +32,13 @@ const createStaff = async (req, res) => {
           message: "Name, email and password are required.",
         });
     }
+    if (!NAME_REGEX.test(String(name).trim())) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name can only contain letters, spaces, apostrophes, hyphens and periods.",
+      });
+    }
     if (!EMAIL_REGEX.test(String(email).trim())) {
       return res
         .status(400)
@@ -49,13 +58,11 @@ const createStaff = async (req, res) => {
           "Password must be at least 8 characters and include letters and numbers.",
       });
     }
-    if (phone && !/^\d{11}$/.test(phone)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Phone number must be exactly 11 digits.",
-        });
+    if (phone && !PHONE_REGEX.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number must be 11 digits and start with 09.",
+      });
     }
 
     const exists = await User.findOne({

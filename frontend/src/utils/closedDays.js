@@ -1,5 +1,4 @@
-export const CLOSED_WEEKDAYS = [0]; // Sunday, dapat kapareho ng backend
-
+export const CLOSED_WEEKDAYS = [0];
 // Ibabalik ang { reason } kung sarado, o null kung bukas
 export const closedInfo = (dateStr, closedDates = []) => {
   const s = String(dateStr).slice(0, 10);

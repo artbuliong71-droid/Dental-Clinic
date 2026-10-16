@@ -116,7 +116,9 @@ const AppointmentsManager = ({
                   </td>
                   <td data-label="Service">{appt.service?.name || "—"}</td>
                   <td data-label="Dentist">
-                    Dr. {appt.dentist?.user?.name || "—"}
+                    {appt.dentist?.user?.name
+                      ? dentistLabel(appt.dentist.user.name)
+                      : "—"}
                   </td>
                   <td data-label="Date and time">
                     {formatDate(appt.appointmentDate)}

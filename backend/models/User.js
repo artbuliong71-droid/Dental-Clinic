@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       minlength: [2, "Name must be at least 2 characters"],
       maxlength: [100, "Name cannot exceed 100 characters"],
+      match: [
+        /^\p{L}[\p{L}\s.'-]*$/u,
+        "Name can only contain letters, spaces, apostrophes, hyphens and periods",
+      ],
     },
     email: {
       type: String,
@@ -21,7 +25,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters"],
+      minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
     role: {
@@ -36,7 +40,7 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      match: [/^[0-9+\-\s()]{7,20}$/, "Please enter a valid phone number"],
+      match: [/^09\d{9}$/, "Phone number must be 11 digits and start with 09"],
     },
     isActive: {
       type: Boolean,

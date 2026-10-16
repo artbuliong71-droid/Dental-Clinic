@@ -16,12 +16,7 @@ router.put("/me/profile", protect, authorize("patient"), updateMyProfile);
 
 // Admin (dentist/owner): any patient's record. Staff has NO access.
 router.get("/patients/:userId", protect, authorize("admin"), getPatientRecord);
-router.put(
-  "/patients/:userId/profile",
-  protect,
-  authorize("admin"),
-  updatePatientProfile,
-);
+
 router.put(
   "/appointments/:appointmentId/note",
   protect,

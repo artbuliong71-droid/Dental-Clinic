@@ -93,7 +93,9 @@ const Login = () => {
   return (
     <AuthLayout>
       <h2 className="auth-title">Welcome Back</h2>
-      <p className="auth-subtitle">Log in to your Germino Dental account</p>
+      <p className="auth-subtitle">
+        Log in to your Germino-Punzal Dental account
+      </p>
 
       <form onSubmit={handleSubmit} className="auth-form" noValidate>
         {error && (

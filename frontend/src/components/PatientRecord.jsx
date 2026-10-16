@@ -1,13 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Printer } from "lucide-react";
-import MedicalProfileForm from "./MedicalProfileForm";
 import ClinicalNoteForm from "./ClinicalNoteForm";
 import NoteDetails from "./NoteDetails";
-import {
-  getPatientRecord,
-  updatePatientProfile,
-  saveClinicalNote,
-} from "../api/recordsApi";
+import { getPatientRecord, saveClinicalNote } from "../api/recordsApi";
 import {
   apptWhen,
   dentistLabel,
@@ -34,15 +29,13 @@ const GENDER = {
   prefer_not_to_say: "Prefer not to say",
 };
 
-/** Admin view of one patient: contact, medical info, and visit history with clinical notes. */
+/** Admin view of one patient: contact, personal info (read-only), and visit history with clinical notes. */
 const PatientRecord = ({ patient, appointments, onBack }) => {
   const [profile, setProfile] = useState(null);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
   const [noteFor, setNoteFor] = useState(null);
   const [savingNote, setSavingNote] = useState(false);
 
@@ -82,25 +75,6 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
     notes.forEach((n) => (map[String(n.appointment)] = n));
     return map;
   }, [notes]);
-
-  const handleSaveProfile = async (data) => {
-    setError("");
-    setMessage("");
-    setSavingProfile(true);
-    try {
-      const res = await updatePatientProfile(patient._id, data);
-      setProfile(res.data);
-      setEditingProfile(false);
-      setMessage("Patient information saved.");
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Failed to save the patient information.",
-      );
-    } finally {
-      setSavingProfile(false);
-    }
-  };
 
   const handleSaveNote = async (appointmentId, data) => {
     setError("");
@@ -142,7 +116,7 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
         </div>
         <div className="record-actions no-print">
           <button type="button" className="btn-ghost" onClick={onBack}>
-            <ArrowLeft size={16} /> Back to patients
+            <ArrowLeft size={16} /> Back
           </button>
           <button
             type="button"
@@ -172,28 +146,11 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
           <section className="form-section">
             <div className="section-head">
               <h3>Patient information</h3>
-              {!editingProfile && (
-                <button
-                  type="button"
-                  className="btn-ghost no-print"
-                  onClick={() => setEditingProfile(true)}
-                >
-                  Edit
-                </button>
-              )}
             </div>
 
-            {editingProfile ? (
-              <MedicalProfileForm
-                profile={profile}
-                onSave={handleSaveProfile}
-                onCancel={() => setEditingProfile(false)}
-                saving={savingProfile}
-                submitLabel="Save information"
-              />
-            ) : !hasInfo ? (
+            {!hasInfo ? (
               <p className="muted">
-                No personal details yet. You can add them with Edit.
+                The patient hasn't filled in their personal details yet.
               </p>
             ) : (
               <dl className="info-grid">
