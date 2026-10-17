@@ -199,6 +199,10 @@ const PatientDashboard = () => {
       ]);
       setServices(servicesRes.data);
       setDentists(dentistsRes.data);
+      // Only one dentist? Pick them automatically.
+      if (dentistsRes.data.length === 1) {
+        setFormData((prev) => ({ ...prev, dentist: dentistsRes.data[0]._id }));
+      }
       setAppointments(appointmentsRes.data);
     } catch (err) {
       setError("Failed to load data. Please refresh the page.");
@@ -278,7 +282,10 @@ const PatientDashboard = () => {
     setLoading(true);
     try {
       await bookAppointment(formData);
-      setFormData(emptyForm);
+      setFormData({
+        ...emptyForm,
+        dentist: dentists.length === 1 ? dentists[0]._id : "",
+      });
       await loadData();
       setActiveView("appointments");
       setMessage("Appointment booked successfully!");
@@ -507,22 +514,38 @@ const PatientDashboard = () => {
                         <h3>Dentist and schedule</h3>
                         <div className="form-grid">
                           <div className="field field-wide">
-                            <label htmlFor="dentist">Dentist</label>
-                            <select
-                              id="dentist"
-                              name="dentist"
-                              value={formData.dentist}
-                              onChange={handleChange}
-                              required
-                            >
-                              <option value="">Select a dentist</option>
-                              {dentists.map((d) => (
-                                <option key={d._id} value={d._id}>
-                                  {dentistLabel(d.user?.name)} (
-                                  {d.specialization})
-                                </option>
-                              ))}
-                            </select>
+                            {dentists.length === 1 ? (
+                              <>
+                                <label id="dentist-label">Dentist</label>
+                                <div
+                                  className="dentist-fixed"
+                                  aria-labelledby="dentist-label"
+                                >
+                                  <Stethoscope size={18} />
+                                  {dentistLabel(dentists[0].user?.name)} (
+                                  {dentists[0].specialization})
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <label htmlFor="dentist">Dentist</label>
+                                <select
+                                  id="dentist"
+                                  name="dentist"
+                                  value={formData.dentist}
+                                  onChange={handleChange}
+                                  required
+                                >
+                                  <option value="">Select a dentist</option>
+                                  {dentists.map((d) => (
+                                    <option key={d._id} value={d._id}>
+                                      {dentistLabel(d.user?.name)} (
+                                      {d.specialization})
+                                    </option>
+                                  ))}
+                                </select>
+                              </>
+                            )}
                           </div>
                           <div className="field">
                             <label htmlFor="appointmentDate">Date</label>

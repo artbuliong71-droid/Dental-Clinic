@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {
   apptWhen,
+  dentistLabel,
   formatDate,
   formatTime,
   isActiveStatus,

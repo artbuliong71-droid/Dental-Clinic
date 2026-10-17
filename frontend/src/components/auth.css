@@ -3,7 +3,13 @@
 .auth-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(360px, 560px) 1fr;
+  grid-template-columns: minmax(340px, 460px) minmax(0, 600px);
+  justify-content: center;
+  align-items: center;
+  column-gap: clamp(2rem, 6vw, 6rem);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(135deg, #f6f1fc, #ece2f9);
 }
 
@@ -11,7 +17,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem clamp(1rem, 4vw, 3.5rem);
   position: relative;
   z-index: 2;
 }
@@ -163,23 +168,22 @@
 
 /* ---------- Branding panel ---------- */
 .auth-brand {
-  position: relative;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem 0;
 }
 
 .brand-wave {
   position: absolute;
-  right: -12%;
+  right: -10%;
   bottom: -38%;
-  width: 62%;
-  height: 85%;
+  width: 48%;
+  height: 80%;
   background: linear-gradient(135deg, #b78ad6, #7b3fa8);
   border-radius: 50%;
   opacity: 0.85;
+  z-index: 0;
 }
 
 .brand-content {
@@ -203,11 +207,12 @@
   margin: 1.25rem 0 0;
   font-size: clamp(1.8rem, 3.2vw, 2.9rem);
   font-weight: 800;
+  line-height: 1.15;
   color: #3b1782;
 }
 
 .brand-content h2 {
-  margin: 0.1rem 0 0;
+  margin: 0.5rem 0 0;
   font-size: clamp(1.1rem, 1.9vw, 1.5rem);
   font-weight: 500;
   letter-spacing: 0.35em;
@@ -299,5 +304,84 @@
 
   .auth-title {
     font-size: 1.6rem;
+  }
+}
+
+/* ---------- Verify OTP ---------- */
+.otp-email {
+  color: #3b1782;
+  word-break: break-all;
+}
+
+.otp-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+/* extra specificity so it beats ".auth-page .auth-form input" */
+.auth-page .auth-form .otp-box {
+  width: 100%;
+  aspect-ratio: 1 / 1.15;
+  padding: 0;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #3b1782;
+  border-radius: 12px;
+}
+
+.info-message {
+  color: #5e1580;
+  text-align: center;
+  font-size: 0.88rem;
+  background: #f4eefb;
+  border: 1px solid #e0d3f3;
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin: 0 0 0.5rem;
+}
+
+.resend-row {
+  text-align: center;
+  margin: 1.1rem 0 0;
+  font-size: 0.92rem;
+  color: #6f6590;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: #7b1fa2;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link-btn:hover:not(:disabled) {
+  color: #5e1580;
+}
+
+.link-btn:disabled {
+  color: #a79bc4;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+/* <Link className="btn-primary btn-link"> */
+.btn-link {
+  text-decoration: none;
+}
+
+@media (max-width: 480px) {
+  .otp-grid {
+    gap: 0.4rem;
+  }
+
+  .auth-page .auth-form .otp-box {
+    font-size: 1.25rem;
   }
 }

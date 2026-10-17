@@ -1,5 +1,8 @@
+// src/components/Navbar.jsx
 import { useAuth } from "../context/AuthContext";
-import { Menu, ShieldCheck } from "lucide-react";
+import { Menu } from "lucide-react";
+// Change this path if your logo lives somewhere else.
+import logo from "../assets/logo.jpg";
 
 const Navbar = ({ onBurgerClick }) => {
   const { user } = useAuth();
@@ -7,12 +10,17 @@ const Navbar = ({ onBurgerClick }) => {
   return (
     <div className="navbar">
       <div className="navbar-left">
-        <button className="burger-btn" onClick={onBurgerClick}>
+        <button
+          type="button"
+          className="burger-btn"
+          onClick={onBurgerClick}
+          aria-label="Toggle menu"
+        >
           <Menu size={24} />
         </button>
         <h1>
-          <ShieldCheck size={22} />
-          Germino Dental
+          <img src={logo} alt="" className="navbar-logo" />
+          Germino-Punzal Dental
         </h1>
       </div>
       {user && (

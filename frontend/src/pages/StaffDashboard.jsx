@@ -4,6 +4,7 @@ import { getAllAppointments, updateAppointmentStatus } from "../api/adminApi";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import AppointmentsManager from "../components/AppointmentsManager";
+import CalendarView from "../components/CalendarView";
 import ClosedDatesView from "../components/ClosedDatesView";
 import { getClosedDates } from "../api/closedDatesApi";
 import {
@@ -32,6 +33,7 @@ const StaffDashboard = () => {
 
   const sidebarItems = [
     { key: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
+    { key: "schedule", label: "Schedule", icon: <CalendarCheck size={18} /> },
     {
       key: "appointments",
       label: "Appointments",
@@ -170,6 +172,21 @@ const StaffDashboard = () => {
                     onStatusUpdate={handleStatusUpdate}
                     showFilters={false}
                     emptyText="No appointments scheduled for today."
+                  />
+                </div>
+              )}
+
+              {/* ---------------- Schedule (calendar) ---------------- */}
+              {activeView === "schedule" && (
+                <div>
+                  <h2>Schedule</h2>
+                  <p className="page-sub">
+                    The clinic calendar. Pick a day to see the dentist's
+                    appointments and manage them.
+                  </p>
+                  <CalendarView
+                    appointments={appointments}
+                    onStatusUpdate={handleStatusUpdate}
                   />
                 </div>
               )}
