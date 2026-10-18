@@ -1,3 +1,6 @@
+const path = require("path");
+const { execFile } = require("child_process");
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const Patient = require("../models/Patient");
 const Dentist = require("../models/Dentist");
@@ -42,6 +45,7 @@ const updateUserStatus = asyncHandler(async (req, res) => {
     data: user,
   });
 });
+
 // @desc    Admin views overall system statistics
 // @route   GET /api/admin/stats
 const getStats = asyncHandler(async (req, res) => {
@@ -100,4 +104,65 @@ const getStats = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getAllUsers, updateUserStatus, getStats };
+// @desc    Admin views analytics computed by the PySpark script
+// @route   GET /api/admin/analytics
+// @desc    Admin views analytics computed by the PySpark script
+// @route   GET /api/admin/analytics
+const getAnalytics = asyncHandler(async (req, res) => {
+  // Raw collection ang gamit dahil string ("latest") ang _id, hindi ObjectId
+  const doc = await mongoose.connection.db
+    .collection("analytics_results")
+    .findOne({ _id: "latest" });
+
+  if (!doc) {
+    res.status(404);
+    throw new Error("No analytics found yet. Click Refresh to generate them.");
+  }
+
+  res.status(200).json({ success: true, data: doc });
+});
+
+// @desc    Admin runs the PySpark script to recompute analytics
+// @route   POST /api/admin/analytics/refresh
+const refreshAnalytics = asyncHandler(async (req, res) => {
+  const sparkDir = path.join(__dirname, "../../pyspark-analytics");
+  const python = path.join(sparkDir, ".venv", "Scripts", "python.exe");
+  const jdk = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot";
+
+  await new Promise((resolve, reject) => {
+    execFile(
+      python,
+      ["clinic_analytics.py"],
+      {
+        cwd: sparkDir,
+        timeout: 5 * 60 * 1000,
+        env: {
+          ...process.env,
+          JAVA_HOME: jdk,
+          PATH: `${jdk}\\bin;${process.env.PATH}`,
+        },
+      },
+      (err, stdout, stderr) => {
+        if (err) {
+          console.error(stderr);
+          return reject(new Error("Analytics refresh failed"));
+        }
+        resolve(stdout);
+      },
+    );
+  });
+
+  const doc = await mongoose.connection.db
+    .collection("analytics_results")
+    .findOne({ _id: "latest" });
+
+  res.status(200).json({ success: true, data: doc });
+});
+
+module.exports = {
+  getAllUsers,
+  updateUserStatus,
+  getStats,
+  getAnalytics,
+  refreshAnalytics,
+};

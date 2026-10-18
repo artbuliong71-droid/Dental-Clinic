@@ -36,3 +36,12 @@ export const deleteAccount = async (id) => {
   const response = await api.delete(`/admin/accounts/${id}`);
   return response.data;
 };
+// Analytics computed by the PySpark script (admin only)
+export const getAnalytics = async () => {
+  const response = await api.get("/admin/analytics");
+  return response.data;
+};
+export const refreshAnalytics = async () => {
+  const response = await api.post("/admin/analytics/refresh");
+  return response.data;
+};

@@ -385,3 +385,22 @@
     font-size: 1.25rem;
   }
 }
+.auth-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--gp-primary, #4b1d86);
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+.auth-back:hover {
+  text-decoration: underline;
+}
+.auth-back:focus-visible {
+  outline: 3px solid var(--gp-mid, #7b2cbf);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

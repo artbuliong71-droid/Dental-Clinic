@@ -3,6 +3,7 @@ import { useNavigate, Link, Navigate } from "react-router-dom";
 import { loginUser } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/AuthLayout";
+import { ArrowLeft } from "lucide-react";
 
 const MailIcon = () => (
   <svg
@@ -156,6 +157,10 @@ const Login = () => {
           Don't have an account? <Link to="/register">Register</Link>
         </p>
       </form>
+
+      <Link to="/" className="auth-back">
+        <ArrowLeft size={16} aria-hidden="true" /> Back to home
+      </Link>
     </AuthLayout>
   );
 };

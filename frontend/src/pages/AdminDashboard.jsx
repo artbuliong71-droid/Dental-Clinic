@@ -4,7 +4,6 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import AppointmentsManager from "../components/AppointmentsManager";
 import ClosedDatesView from "../components/ClosedDatesView";
-import PatientRecord from "../components/PatientRecord";
 import {
   getClosedDates,
   addClosedDate,
@@ -20,6 +19,7 @@ import {
   Hourglass,
   CalendarCheck,
   CalendarX,
+  TrendingUp,
   FileText,
   Eye,
   EyeOff,
@@ -32,11 +32,15 @@ import {
   createStaff,
   getPatients,
   deleteAccount,
+  getAnalytics,
+  refreshAnalytics,
 } from "../api/adminApi";
 import { getServices, createService } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
 import CalendarView from "../components/CalendarView";
 import PatientsView from "../components/PatientsView";
+import PatientRecord from "../components/PatientRecord";
+import AnalyticsView from "../components/AnalyticsView";
 import DentistsView from "../components/DentistsView";
 import {
   formatDate,
@@ -91,6 +95,8 @@ const AdminDashboard = () => {
   const [patients, setPatients] = useState([]);
   const [dentists, setDentists] = useState([]);
   const [openPatient, setOpenPatient] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [closedDates, setClosedDates] = useState([]);
   const [closureForm, setClosureForm] = useState({ date: "", reason: "" });
   const [recordPatient, setRecordPatient] = useState(null);
@@ -120,6 +126,7 @@ const AdminDashboard = () => {
     { key: "services", label: "Services", icon: <ClipboardList size={18} /> },
     { key: "patients", label: "Patients", icon: <Users size={18} /> },
     { key: "dentists", label: "Dentists", icon: <Stethoscope size={18} /> },
+    { key: "analytics", label: "Analytics", icon: <TrendingUp size={18} /> },
     { key: "staff", label: "Staff Accounts", icon: <UserCheck size={18} /> },
   ];
 
@@ -129,6 +136,7 @@ const AdminDashboard = () => {
     loadPatients();
     loadDentists();
     loadClosedDates();
+    loadAnalytics();
   }, []);
 
   const loadData = async () => {
@@ -173,6 +181,33 @@ const AdminDashboard = () => {
       setDentists(res.data);
     } catch (err) {
       setDentists([]);
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      const res = await getAnalytics();
+      setAnalytics(res.data);
+    } catch (err) {
+      setAnalytics(null);
+    }
+  };
+
+  // Runs the PySpark job on the server (can take up to a minute), then shows the new numbers
+  const handleRefreshAnalytics = async () => {
+    setError("");
+    setMessage("");
+    setRefreshing(true);
+    try {
+      const res = await refreshAnalytics();
+      setAnalytics(res.data);
+      setMessage("Analytics updated.");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to update the analytics.",
+      );
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -587,6 +622,8 @@ const AdminDashboard = () => {
                   />
                 </div>
               )}
+
+              {/* ---------------- Service records (completed visits) ---------------- */}
               {activeView === "records" &&
                 (recordPatient ? (
                   <PatientRecord
@@ -825,6 +862,15 @@ const AdminDashboard = () => {
                   </p>
                   <DentistsView dentists={dentists} />
                 </div>
+              )}
+
+              {/* ---------------- Analytics (PySpark) ---------------- */}
+              {activeView === "analytics" && (
+                <AnalyticsView
+                  analytics={analytics}
+                  onRefresh={handleRefreshAnalytics}
+                  refreshing={refreshing}
+                />
               )}
 
               {/* ---------------- Staff accounts ---------------- */}

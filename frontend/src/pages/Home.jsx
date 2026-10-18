@@ -101,18 +101,6 @@ const Home = () => {
             <Link to={book}>Appointments</Link>
             <a href="#contact">Contact</a>
           </nav>
-
-          <div className="gp-header-actions">
-            {!user && (
-              <Link to="/login" className="gp-btn gp-btn-outline">
-                Login
-              </Link>
-            )}
-            <Link to={book} className="gp-btn gp-btn-solid">
-              <CalendarPlus size={16} aria-hidden="true" />
-              {user ? "Go to dashboard" : "Book appointment"}
-            </Link>
-          </div>
         </div>
       </header>
 
@@ -133,7 +121,8 @@ const Home = () => {
               </p>
               <div className="gp-cta-row">
                 <Link to={book} className="gp-btn gp-btn-solid gp-btn-lg">
-                  <CalendarPlus size={18} aria-hidden="true" /> Book appointment
+                  <CalendarPlus size={18} aria-hidden="true" />{" "}
+                  {user ? "Go to dashboard" : "Book appointment"}
                 </Link>
                 <a href="#about" className="gp-btn gp-btn-outline gp-btn-lg">
                   Learn more <ArrowRight size={16} aria-hidden="true" />
@@ -211,7 +200,7 @@ const Home = () => {
       <footer id="contact" className="gp-footer">
         <div className="gp-wrap gp-footer-grid">
           <div className="gp-foot-brand">
-            <img src={logo} alt="" width="56" height="56" />
+            <img src={logo} alt="" width="44" height="44" />
             <div>
               <strong>GERMINO-PUNZAL</strong>
               <small>DENTAL CLINIC</small>
@@ -237,7 +226,7 @@ const Home = () => {
             </h3>
             <dl>
               <dt>Monday to Saturday</dt>
-              <dd>9:00 AM to 3:00 PM</dd>
+              <dd>9:00 AM to 4:00 PM</dd>
               <dt>Sunday</dt>
               <dd>Closed</dd>
             </dl>
@@ -248,7 +237,7 @@ const Home = () => {
             <a href="#home">Home</a>
             <a href="#about">About</a>
             <a href="#services">Services</a>
-            <Link to={book}>Appointments</Link>
+            {!user && <Link to="/login">Login</Link>}
           </nav>
         </div>
         <p className="gp-copy">

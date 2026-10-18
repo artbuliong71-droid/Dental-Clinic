@@ -5,6 +5,8 @@ const {
   getAllUsers,
   updateUserStatus,
   getStats,
+  getAnalytics,
+  refreshAnalytics,
 } = require("../controllers/adminController");
 const { getStaff, createStaff } = require("../controllers/staffController");
 const {
@@ -22,6 +24,13 @@ router.patch(
   updateUserStatus,
 );
 router.get("/stats", protect, authorize("admin"), getStats);
+router.get("/analytics", protect, authorize("admin"), getAnalytics);
+router.post(
+  "/analytics/refresh",
+  protect,
+  authorize("admin"),
+  refreshAnalytics,
+);
 
 // Staff accounts (admin creates them; no more hardcoded staff)
 router.get("/staff", protect, authorize("admin"), getStaff);

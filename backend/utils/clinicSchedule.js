@@ -21,7 +21,7 @@ const isClosed = async (dateInput) => {
 };
 const OPEN_HOUR = 9;
 const CLOSE_HOUR = 15; // 3:00 PM
-const SLOT_MINUTES = 60;
+const SLOT_MINUTES = 30;
 
 // ["09:00", "10:00", ... "14:00"]
 const getAllSlots = () => {

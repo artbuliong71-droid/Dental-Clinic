@@ -67,12 +67,16 @@
   border-bottom: 1px solid var(--gp-line);
   backdrop-filter: blur(6px);
 }
+.gp-header .gp-wrap {
+  max-width: none;
+  padding: 0 clamp(20px, 4vw, 56px);
+}
 .gp-header-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 20px;
-  min-height: 76px;
+  min-height: 68px;
 }
 .gp-brand {
   display: flex;
@@ -99,7 +103,8 @@
 }
 .gp-nav {
   display: flex;
-  gap: 30px;
+  gap: 32px;
+  justify-self: center;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -109,10 +114,6 @@
 }
 .gp-nav a:hover {
   border-bottom-color: var(--gp-mid);
-}
-.gp-header-actions {
-  display: flex;
-  gap: 10px;
 }
 
 /* ---------- Hero ---------- */
@@ -279,16 +280,18 @@
 .gp-footer {
   background: var(--gp-ink);
   color: #e9defa;
-  padding: 36px 0 18px;
-  font-size: 0.88rem;
+  padding: 22px 0 10px;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 .gp-footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1.1fr 1fr 0.8fr;
-  gap: 28px;
+  grid-template-columns: 1.5fr 1.2fr 1fr 1fr;
+  gap: 20px;
+  align-items: start;
 }
 .gp-footer p {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   display: flex;
   gap: 8px;
   align-items: flex-start;
@@ -297,30 +300,35 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 .gp-footer dl {
   margin: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 16px;
+}
+.gp-footer dt {
+  color: #bda8e0;
+  font-size: 0.8rem;
 }
 .gp-footer dd {
-  margin: 0;
+  margin: 0 0 4px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .gp-footer nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+  font-size: 0.8rem;
 }
 .gp-footer a:hover {
   text-decoration: underline;
 }
 .gp-foot-brand {
   display: flex;
-  gap: 14px;
+  gap: 12px;
 }
 .gp-foot-brand strong {
   display: block;
@@ -330,15 +338,15 @@
 .gp-foot-brand small {
   display: block;
   letter-spacing: 0.25em;
-  font-size: 0.68rem;
-  margin-bottom: 8px;
+  font-size: 0.66rem;
+  margin-bottom: 4px;
 }
 .gp-copy {
   justify-content: center;
-  margin-top: 26px !important;
-  padding-top: 14px;
+  margin-top: 14px !important;
+  padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
 }
 
 /* ---------- Tablet and phone ---------- */
@@ -363,9 +371,6 @@
     grid-template-columns: 1fr;
   }
   .gp-brand small {
-    display: none;
-  }
-  .gp-header-actions .gp-btn-outline {
     display: none;
   }
 }
