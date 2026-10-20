@@ -1,10 +1,8 @@
-import { CalendarDays, Check, X, Wallet, Users, RefreshCw } from "lucide-react";
+import { CalendarDays, Check, X, Users, RefreshCw } from "lucide-react";
 import "./manage.css";
 
 const peso = (n) =>
   `₱${Number(n || 0).toLocaleString("en-PH", { maximumFractionDigits: 0 })}`;
-const pesoShort = (n) =>
-  n >= 1000 ? `₱${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `₱${n}`;
 const monthLabel = (ym) => {
   const [y, m] = ym.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString("en-PH", { month: "short" });
@@ -109,11 +107,6 @@ const AnalyticsView = ({ analytics, onRefresh, refreshing }) => {
       value: `${summary.cancellationRate}%`,
       icon: X,
     },
-    {
-      label: "Estimated revenue",
-      value: peso(summary.estimatedRevenue),
-      icon: Wallet,
-    },
     { label: "Patients", value: patients.totalPatients, icon: Users },
   ];
 
@@ -150,20 +143,6 @@ const AnalyticsView = ({ analytics, onRefresh, refreshing }) => {
             items={monthly.map((m) => ({
               label: monthLabel(m.month),
               value: m.total,
-            }))}
-          />
-        </Card>
-
-        <Card
-          title="Estimated revenue per month"
-          sub="Completed visits only, at the current service prices"
-        >
-          <BarChart
-            label="Estimated revenue per month"
-            format={pesoShort}
-            items={monthly.map((m) => ({
-              label: monthLabel(m.month),
-              value: m.revenue,
             }))}
           />
         </Card>
@@ -222,42 +201,6 @@ const AnalyticsView = ({ analytics, onRefresh, refreshing }) => {
               value: n.count,
             }))}
           />
-        </Card>
-
-        <Card
-          title="Returning patients"
-          sub="Patients with 2 or more completed visits"
-        >
-          <ul className="hbar-list">
-            <li>
-              <div className="hbar-top">
-                <strong>Returning</strong>
-                <span>
-                  {patients.returningPatients} ({patients.returningRate}%)
-                </span>
-              </div>
-              <div className="hbar-track">
-                <div
-                  className="hbar"
-                  style={{ width: `${patients.returningRate}%` }}
-                />
-              </div>
-            </li>
-            <li>
-              <div className="hbar-top">
-                <strong>One-time</strong>
-                <span>{patients.oneTimePatients}</span>
-              </div>
-              <div className="hbar-track">
-                <div
-                  className="hbar"
-                  style={{
-                    width: `${patients.returningPatients + patients.oneTimePatients ? 100 - patients.returningRate : 0}%`,
-                  }}
-                />
-              </div>
-            </li>
-          </ul>
         </Card>
       </div>
     </div>

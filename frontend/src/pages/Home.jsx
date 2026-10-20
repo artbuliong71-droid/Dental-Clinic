@@ -98,8 +98,12 @@ const Home = () => {
             <a href="#home">Home</a>
             <a href="#about">About</a>
             <a href="#services">Services</a>
-            <Link to={book}>Appointments</Link>
             <a href="#contact">Contact</a>
+            {user ? (
+              <Link to={book}>Dashboard</Link>
+            ) : (
+              <Link to="/login">Login</Link>
+            )}
           </nav>
         </div>
       </header>

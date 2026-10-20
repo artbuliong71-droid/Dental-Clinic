@@ -17,7 +17,15 @@ const protect = asyncHandler(async (req, res, next) => {
     throw new Error("Not authorized, no token provided");
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+  } catch (err) {
+    res.status(401);
+    throw new Error("Not authorized, token is invalid or expired");
+  }
 
   const user = await User.findById(decoded.id);
 
@@ -25,7 +33,13 @@ const protect = asyncHandler(async (req, res, next) => {
     res.status(401);
     throw new Error("Not authorized, user no longer exists or is inactive");
   }
-
+  if (
+    user.passwordChangedAt &&
+    decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)
+  ) {
+    res.status(401);
+    throw new Error("Password was changed. Please log in again.");
+  }
   req.user = user;
   next();
 });

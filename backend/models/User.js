@@ -53,6 +53,10 @@ const userSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
       select: false,
+      resetCode: { type: String, select: false },
+      resetExpires: { type: Date, select: false },
+      resetAttempts: { type: Number, default: 0, select: false },
+      passwordChangedAt: { type: Date },
     },
   },
   {

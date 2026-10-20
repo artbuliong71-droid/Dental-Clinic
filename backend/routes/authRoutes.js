@@ -15,6 +15,13 @@ const {
 } = require("../middleware/validators/authValidators");
 const validate = require("../middleware/validate");
 const { protect } = require("../middleware/authMiddleware");
+const {
+  forgotPassword,
+  resetPassword,
+} = require("../controllers/passwordResetController");
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 router.post("/register", registerValidation, validate, register);
 
