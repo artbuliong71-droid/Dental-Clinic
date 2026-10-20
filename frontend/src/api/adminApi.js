@@ -45,3 +45,8 @@ export const refreshAnalytics = async () => {
   const response = await api.post("/admin/analytics/refresh");
   return response.data;
 };
+// Tinitingnan kung tumatakbo pa ang PySpark job (admin only)
+export const getAnalyticsStatus = async () => {
+  const response = await api.get("/admin/analytics/status");
+  return response.data;
+};

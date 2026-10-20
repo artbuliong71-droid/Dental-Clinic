@@ -122,14 +122,16 @@ const getAnalytics = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: doc });
 });
 
-// @desc    Admin runs the PySpark script to recompute analytics
-// @route   POST /api/admin/analytics/refresh
-const refreshAnalytics = asyncHandler(async (req, res) => {
+let analyticsRunning = null;
+
+const runAnalyticsJob = () => {
+  if (analyticsRunning) return analyticsRunning; // kung tumatakbo na, hintayin na lang iyon
+
   const sparkDir = path.join(__dirname, "../../pyspark-analytics");
   const python = path.join(sparkDir, ".venv", "Scripts", "python.exe");
   const jdk = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot";
 
-  await new Promise((resolve, reject) => {
+  analyticsRunning = new Promise((resolve, reject) => {
     execFile(
       python,
       ["clinic_analytics.py"],
@@ -143,6 +145,7 @@ const refreshAnalytics = asyncHandler(async (req, res) => {
         },
       },
       (err, stdout, stderr) => {
+        analyticsRunning = null;
         if (err) {
           console.error(stderr);
           return reject(new Error("Analytics refresh failed"));
@@ -152,11 +155,31 @@ const refreshAnalytics = asyncHandler(async (req, res) => {
     );
   });
 
+  return analyticsRunning;
+};
+
+// @desc    Starts the PySpark job in the background and returns right away
+// @route   POST /api/admin/analytics/refresh
+const refreshAnalytics = asyncHandler(async (req, res) => {
+  const alreadyRunning = !!analyticsRunning;
+  runAnalyticsJob().catch(() => {}); // hindi hinihintay; naka-log na ang error
+
   const doc = await mongoose.connection.db
     .collection("analytics_results")
     .findOne({ _id: "latest" });
 
-  res.status(200).json({ success: true, data: doc });
+  res.status(202).json({
+    success: true,
+    running: true,
+    alreadyRunning,
+    data: doc,
+  });
+});
+
+// @desc    Tells the dashboard if the job is still running
+// @route   GET /api/admin/analytics/status
+const getAnalyticsStatus = asyncHandler(async (req, res) => {
+  res.status(200).json({ success: true, running: !!analyticsRunning });
 });
 
 module.exports = {
@@ -165,4 +188,6 @@ module.exports = {
   getStats,
   getAnalytics,
   refreshAnalytics,
+  getAnalyticsStatus,
+  runAnalyticsJob,
 };

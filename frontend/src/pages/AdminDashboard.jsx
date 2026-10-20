@@ -34,6 +34,7 @@ import {
   deleteAccount,
   getAnalytics,
   refreshAnalytics,
+  getAnalyticsStatus,
 } from "../api/adminApi";
 import { getServices, createService } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
@@ -194,19 +195,34 @@ const AdminDashboard = () => {
   };
 
   // Runs the PySpark job on the server (can take up to a minute), then shows the new numbers
+  // Sinisimulan ang PySpark job sa server, ipinapakita agad ang kasalukuyang data,
+  // at kinukuha ang bago kapag tapos na ang job
   const handleRefreshAnalytics = async () => {
     setError("");
     setMessage("");
     setRefreshing(true);
     try {
       const res = await refreshAnalytics();
-      setAnalytics(res.data);
-      setMessage("Analytics updated.");
+      if (res.data) setAnalytics(res.data);
+
+      const timer = setInterval(async () => {
+        try {
+          const s = await getAnalyticsStatus();
+          if (!s.running) {
+            clearInterval(timer);
+            await loadAnalytics();
+            setRefreshing(false);
+            setMessage("Analytics updated.");
+          }
+        } catch {
+          clearInterval(timer);
+          setRefreshing(false);
+        }
+      }, 3000);
     } catch (err) {
       setError(
         err.response?.data?.message || "Failed to update the analytics.",
       );
-    } finally {
       setRefreshing(false);
     }
   };

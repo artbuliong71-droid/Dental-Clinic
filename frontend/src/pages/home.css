@@ -379,3 +379,83 @@
     scroll-behavior: auto;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .gp-home {
+    scroll-behavior: auto;
+  }
+}
+
+/* ---------- Service cards: description shows on hover / click ---------- */
+.gp-services {
+  align-items: start; /* hindi hahaba ang ibang card kapag may bumukas */
+}
+.gp-service {
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.gp-service:hover,
+.gp-service.open {
+  box-shadow: 0 10px 24px rgba(75, 29, 134, 0.15);
+  transform: translateY(-3px);
+}
+.gp-service-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gp-service-btn:focus-visible {
+  outline: 3px solid var(--gp-mid);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.gp-service-text {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin: 0;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.25s ease;
+}
+.gp-service:hover .gp-service-text,
+.gp-service:focus-within .gp-service-text,
+.gp-service.open .gp-service-text {
+  max-height: 140px;
+  opacity: 1;
+}
+/* Center ang icon at title, at ayusin ang laki ng card */
+.gp-service {
+  text-align: center;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.gp-service-btn {
+  text-align: center;
+}
+.gp-service h3 {
+  display: block;
+  margin: 14px 0 0;
+}
+.gp-service-text {
+  text-align: center;
+}
+.gp-service:hover .gp-service-text,
+.gp-service:focus-within .gp-service-text,
+.gp-service.open .gp-service-text {
+  margin-top: 10px;
+}
+
+/* Hindi na matatakpan ng sticky navbar ang section kapag pinindot ang menu */
+.gp-home section[id] {
+  scroll-margin-top: 68px;
+}

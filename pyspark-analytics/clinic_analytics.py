@@ -9,6 +9,7 @@ Run it by hand:   python clinic_analytics.py
 or from the admin Analytics page (the "Refresh" button runs this same script).
 """
 import os
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,8 @@ STATUSES = ["Pending", "Confirmed", "Completed", "Cancelled"]
 # Spark's dayofweek(): 1 = Sunday ... 7 = Saturday. We show Monday first.
 WEEKDAY_ORDER = [(2, "Mon"), (3, "Tue"), (4, "Wed"), (5, "Thu"), (6, "Fri"), (7, "Sat"), (1, "Sun")]
 MONTHS_SHOWN = 6
+CLINIC_FIRST_HOUR = 8   # 8 AM
+CLINIC_LAST_HOUR = 16   # 4 PM (the last appointment slot)
 
 
 # ---------------------------------------------------------------- data loading
@@ -46,6 +49,19 @@ def load_rows(db):
         # Dates are sent to Spark as "YYYY-MM-DD" text, so time zones can never shift the day.
         return value.strftime("%Y-%m-%d") if value else None
 
+    # Only count patients whose account still exists. Leftover records of deleted accounts
+    # (for example, deleted by hand in MongoDB Compass) are ignored, so the numbers match
+    # what the Patients and Appointments pages show.
+    user_ids = {u["_id"] for u in db.users.find({"role": "patient"}, {"_id": 1})}
+    patient_docs = [p for p in db.patients.find({}) if p.get("user") in user_ids]
+    patient_ids = {p["_id"] for p in patient_docs}
+
+    all_appointments = list(db.appointments.find({}))
+    kept = [a for a in all_appointments if a.get("patient") in patient_ids]
+    skipped = len(all_appointments) - len(kept)
+    if skipped:
+        print(f"Ignored {skipped} appointment(s) that belong to deleted patients")
+
     appointments = [
         {
             "id": str(a["_id"]),
@@ -55,14 +71,55 @@ def load_rows(db):
             "time": a.get("appointmentTime") or "00:00",
             "status": a.get("status") or "Pending",
         }
-        for a in db.appointments.find({})
+        for a in kept
     ]
     services = [
         {"id": str(s["_id"]), "name": s.get("name"), "price": float(s.get("price") or 0)}
         for s in db.dentalservices.find({})
     ]
-    patients = [{"id": str(p["_id"]), "created": day(p.get("createdAt"))} for p in db.patients.find({})]
+    patients = [{"id": str(p["_id"]), "created": day(p.get("createdAt"))} for p in patient_docs]
     return appointments, services, patients
+
+
+# --------------------------------------------------------------------- Java
+def ensure_java():
+    """
+    PySpark needs Java (17 or newer). On Windows, a wrong JAVA_HOME makes Spark stop with
+    "The system cannot find the path specified." So: ignore a broken JAVA_HOME, and look
+    for Java in the usual install folders before giving up with a clear message.
+    """
+    exe = "java.exe" if os.name == "nt" else "java"
+
+    home = os.environ.get("JAVA_HOME")
+    if home and not (Path(home) / "bin" / exe).exists():
+        print(f"JAVA_HOME points to a folder that does not exist ({home}). Ignoring it.")
+        os.environ.pop("JAVA_HOME", None)
+        home = None
+    if home:
+        return
+
+    if os.name == "nt":
+        program_files = Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+        folders = ["Eclipse Adoptium", "Java", "Microsoft", "Zulu", "Amazon Corretto", "BellSoft", "Semeru"]
+        found = []
+        for name in folders:
+            root = program_files / name
+            if root.exists():
+                found += [p for p in root.iterdir() if (p / "bin" / exe).exists()]
+        if found:
+            best = sorted(found, key=lambda p: p.name)[-1]  # newest version folder
+            os.environ["JAVA_HOME"] = str(best)
+            os.environ["PATH"] = str(best / "bin") + os.pathsep + os.environ.get("PATH", "")
+            print(f"Using Java from {best}")
+            return
+
+    if shutil.which("java"):
+        return  # Java is on the PATH
+
+    raise RuntimeError(
+        "Java was not found. Install Java 17 (winget install EclipseAdoptium.Temurin.17.JDK), "
+        "then open a NEW terminal and try again."
+    )
 
 
 # --------------------------------------------------------------------- Spark
@@ -124,7 +181,7 @@ def compute(spark, appointments, services, patients, today=None):
     joined = (
         appts.join(svc, appts.service == svc.service_id, "left")
         .withColumn("price", F.coalesce("price", F.lit(0.0)))
-        .withColumn("name", F.coalesce("name", F.lit("Unknown service")))
+        .withColumn("name", F.coalesce("name", F.lit("Deleted service")))
         # Revenue is only counted for completed visits
         .withColumn("revenue", F.when(is_completed, F.col("price")).otherwise(F.lit(0.0)))
         .cache()
@@ -185,7 +242,8 @@ def compute(spark, appointments, services, patients, today=None):
     # ---- busiest hours and days (cancelled bookings are not counted)
     active = joined.filter(~is_cancelled)
     hour_counts = {r["hour"]: int(r["count"]) for r in active.groupBy("hour").count().collect() if r["hour"] is not None}
-    hours = sorted(set(range(8, 18)) | set(hour_counts))
+    # The clinic books from 8 AM until the last slot at 4 PM, so only those hours are shown
+    hours = list(range(CLINIC_FIRST_HOUR, CLINIC_LAST_HOUR + 1))
     busiest_hours = [{"hour": h, "label": hour_label(h), "count": hour_counts.get(h, 0)} for h in hours]
 
     dow_counts = {r["dow"]: int(r["count"]) for r in active.groupBy("dow").count().collect() if r["dow"] is not None}
@@ -227,6 +285,7 @@ def main():
     appointments, services, patients = load_rows(db)
     print(f"Loaded {len(appointments)} appointments, {len(services)} services, {len(patients)} patients")
 
+    ensure_java()
     spark = build_spark()
     try:
         metrics = compute(spark, appointments, services, patients)

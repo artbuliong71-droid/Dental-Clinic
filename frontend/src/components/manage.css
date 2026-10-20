@@ -694,3 +694,29 @@
     grid-template-columns: 1fr;
   }
 }
+.an-wide {
+  grid-column: 1 / -1;
+}
+
+.an-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.an-tab {
+  border: 1px solid #d9c9ef;
+  background: #fff;
+  color: #4b1d85;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.an-tab.active {
+  background: #6a1b9a;
+  border-color: #6a1b9a;
+  color: #fff;
+}

@@ -7,6 +7,7 @@ const {
   getStats,
   getAnalytics,
   refreshAnalytics,
+  getAnalyticsStatus,
 } = require("../controllers/adminController");
 const { getStaff, createStaff } = require("../controllers/staffController");
 const {
@@ -30,6 +31,12 @@ router.post(
   protect,
   authorize("admin"),
   refreshAnalytics,
+);
+router.get(
+  "/analytics/status",
+  protect,
+  authorize("admin"),
+  getAnalyticsStatus,
 );
 
 // Staff accounts (admin creates them; no more hardcoded staff)

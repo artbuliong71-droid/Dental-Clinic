@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CalendarPlus,
   ArrowRight,
+  ChevronDown,
   Stethoscope,
   Sparkles,
   Smile,
@@ -73,7 +75,26 @@ const FEATURES = [
     text: "Your comfort matters.",
   },
 ];
+const ServiceCard = ({ icon: Icon, title, text }) => {
+  const [open, setOpen] = useState(false);
 
+  return (
+    <article className={`gp-service ${open ? "open" : ""}`}>
+      <button
+        type="button"
+        className="gp-service-btn"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span className="gp-icon">
+          <Icon size={26} />
+        </span>
+        <h3>{title}</h3>
+      </button>
+      <p className="gp-service-text">{text}</p>
+    </article>
+  );
+};
 const Home = () => {
   const { user } = useAuth();
   const book = bookingPath(user);
@@ -151,14 +172,8 @@ const Home = () => {
               healthy, confident, and beautiful.
             </p>
             <div className="gp-services">
-              {SERVICES.map(({ icon: Icon, title, text }) => (
-                <article key={title} className="gp-service">
-                  <span className="gp-icon">
-                    <Icon size={26} />
-                  </span>
-                  <h3>{title}</h3>
-                  <p>{text}</p>
-                </article>
+              {SERVICES.map((s) => (
+                <ServiceCard key={s.title} {...s} />
               ))}
             </div>
           </div>
