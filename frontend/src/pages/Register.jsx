@@ -21,7 +21,7 @@ const EyeIcon = ({ off }) => (
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 // Letters (including ñ, é, etc.), spaces, apostrophes, hyphens and periods only. No numbers.
-const NAME_REGEX = /^\p{L}[\p{L}\s.'-]*$/u;
+const NAME_REGEX = /^\p{L}[\p{L}\s]*$/u;
 // Philippine mobile number: 11 digits, starts with 09
 const PHONE_REGEX = /^09\d{9}$/;
 
@@ -32,8 +32,7 @@ const validate = ({ name, email, password, phone }) => {
   else if (name.trim().length < 2)
     errors.name = "Name must be at least 2 characters.";
   else if (!NAME_REGEX.test(name.trim()))
-    errors.name =
-      "Name can only contain letters, spaces, apostrophes, hyphens and periods.";
+    errors.name = "Name can only contain letters and spaces.";
 
   if (!email.trim()) errors.email = "Email is required.";
   else if (!EMAIL_REGEX.test(email.trim()))

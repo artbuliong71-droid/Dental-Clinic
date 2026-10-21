@@ -1,3 +1,4 @@
+const { notifyAppointmentStatus } = require("../utils/appointmentNotifier");
 const Appointment = require("../models/Appointment");
 const Patient = require("../models/Patient");
 const Dentist = require("../models/Dentist");
@@ -179,8 +180,6 @@ const getAppointmentById = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: appointment });
 });
 
-// @desc    Admin/Staff updates appointment status (Confirmed, Completed, Cancelled)
-// @route   PATCH /api/appointments/:id/status
 const updateAppointmentStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
 
@@ -190,12 +189,23 @@ const updateAppointmentStatus = asyncHandler(async (req, res) => {
     throw new Error("Appointment not found");
   }
 
+  const previousStatus = appointment.status;
+
   appointment.status = status;
   if (status === "Cancelled" && req.body.cancellationReason) {
     appointment.cancellationReason = req.body.cancellationReason;
   }
 
   await appointment.save();
+
+  // Mag-notify lang kapag talagang nagbago ang status
+  if (previousStatus !== status) {
+    try {
+      await notifyAppointmentStatus(appointment);
+    } catch (err) {
+      console.error("Notification error:", err.message);
+    }
+  }
 
   res.status(200).json({
     success: true,

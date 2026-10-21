@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
 const { errorHandler, notFound } = require("./middleware/errorHandler");
+const { startService, triggerAnalytics } = require("./utils/analyticsService");
 
 connectDB();
 
@@ -18,6 +19,21 @@ app.use(express.urlencoded({ extended: true }));
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+// Kapag may matagumpay na pagbabago sa data, kusang i-update ang analytics
+app.use((req, res, next) => {
+  const isChange = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+  const watched =
+    /^\/api\/(appointments|services|admin\/accounts|auth\/(register|verify))/.test(
+      req.originalUrl,
+    );
+  if (isChange && watched) {
+    res.on("finish", () => {
+      if (res.statusCode < 400) triggerAnalytics();
+    });
+  }
+  next();
+});
 
 app.get("/api/health", (req, res) => {
   res
@@ -33,6 +49,8 @@ app.use("/api/dentists", require("./routes/dentistRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/closed-dates", require("./routes/closedDateRoutes"));
 app.use("/api/records", require("./routes/recordsRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/walk-in", require("./routes/walkInRoutes"));
 
 app.use(notFound);
 app.use(errorHandler);
@@ -42,6 +60,7 @@ app.listen(PORT, () => {
   console.log(
     `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
   );
+  startService(); // sinisimulan ang PySpark service na laging naka-on
 });
 
 module.exports = app;

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-
+const { getAuditLogs } = require("../controllers/auditController");
+const { auditEvent } = require("../utils/AuditLog");
 const {
   getAllUsers,
   updateUserStatus,
@@ -41,10 +42,22 @@ router.get(
 
 // Staff accounts (admin creates them; no more hardcoded staff)
 router.get("/staff", protect, authorize("admin"), getStaff);
-router.post("/staff", protect, authorize("admin"), createStaff);
-
+router.post(
+  "/staff",
+  protect,
+  authorize("admin"),
+  auditEvent("staff-created"),
+  createStaff,
+);
 // Patients list + delete a staff or patient account
 router.get("/patients", protect, authorize("admin"), getPatients);
-router.delete("/accounts/:id", protect, authorize("admin"), deleteAccount);
+router.delete(
+  "/accounts/:id",
+  protect,
+  authorize("admin"),
+  auditEvent("account-deleted"),
+  deleteAccount,
+);
+router.get("/audit-logs", protect, authorize("admin"), getAuditLogs);
 
 module.exports = router;

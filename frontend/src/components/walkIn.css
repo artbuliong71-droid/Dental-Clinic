@@ -1,0 +1,45 @@
+.walkin-form {
+  margin-top: 20px;
+  padding: 20px;
+  max-width: 520px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.walkin-form h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.walkin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.walkin-form select,
+.walkin-form input,
+.walkin-form textarea {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font: inherit;
+}
+.walkin-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.walkin-error {
+  color: #b91c1c;
+  margin: 12px 0;
+}
+.walkin-success {
+  color: #15803d;
+  margin: 12px 0;
+}

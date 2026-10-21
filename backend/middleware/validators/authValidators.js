@@ -1,7 +1,7 @@
 const { body } = require("express-validator");
 
-// Letters (including ñ, é, etc.), spaces, apostrophes, hyphens and periods. No numbers.
-const NAME_REGEX = /^\p{L}[\p{L}\s.'-]*$/u;
+// Letters (including ñ, é, etc.) and spaces only. No numbers, apostrophes, hyphens or periods.
+const NAME_REGEX = /^\p{L}[\p{L}\s]*$/u;
 // Philippine mobile number: 11 digits, starts with 09
 const PHONE_REGEX = /^09\d{9}$/;
 // Keep the email exactly as typed (only lowercased). The default normalizeEmail() removes the
@@ -22,10 +22,7 @@ const registerValidation = [
     .withMessage("Name must be 2-100 characters")
     .bail()
     .matches(NAME_REGEX)
-    .withMessage(
-      "Name can only contain letters, spaces, apostrophes, hyphens and periods",
-    ),
-
+    .withMessage("Name can only contain letters and spaces"),
   body("email")
     .trim()
     .notEmpty()

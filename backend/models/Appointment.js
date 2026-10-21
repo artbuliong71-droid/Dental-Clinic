@@ -55,6 +55,15 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: [300, "Cancellation reason cannot exceed 300 characters"],
+      source: {
+        type: String,
+        enum: ["online", "walk-in"],
+        default: "online",
+      },
+      createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
     },
   },
   {

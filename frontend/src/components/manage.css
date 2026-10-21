@@ -720,3 +720,44 @@
   border-color: #6a1b9a;
   color: #fff;
 }
+/* ---------- Audit logs ---------- */
+.audit-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid var(--soft-blue);
+  border-radius: 12px;
+}
+.audit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.audit-actions .btn-primary-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--muted-text);
+}
+.pager-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

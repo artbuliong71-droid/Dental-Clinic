@@ -19,15 +19,28 @@ const {
   forgotPassword,
   resetPassword,
 } = require("../controllers/passwordResetController");
+const { auditEvent } = require("../utils/AuditLog");
 
 router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+router.post("/reset-password", auditEvent("password-reset"), resetPassword);
 
-router.post("/register", registerValidation, validate, register);
+router.post(
+  "/register",
+  auditEvent("register"),
+  registerValidation,
+  validate,
+  register,
+);
 
-router.post("/login", loginValidation, validate, login);
+router.post("/login", auditEvent("login"), loginValidation, validate, login);
 
-router.post("/verify-otp", verifyOTPValidation, validate, verifyOTP);
+router.post(
+  "/verify-otp",
+  auditEvent("verify-otp"),
+  verifyOTPValidation,
+  validate,
+  verifyOTP,
+);
 
 // Send a new OTP (only works right after a successful password step; 60s cooldown)
 router.post("/resend-otp", resendOTP);

@@ -9,10 +9,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       minlength: [2, "Name must be at least 2 characters"],
       maxlength: [100, "Name cannot exceed 100 characters"],
-      match: [
-        /^\p{L}[\p{L}\s.'-]*$/u,
-        "Name can only contain letters, spaces, apostrophes, hyphens and periods",
-      ],
+      match: [/^\p{L}[\p{L}\s]*$/u, "Name can only contain letters and spaces"],
     },
     email: {
       type: String,
@@ -53,11 +50,11 @@ const userSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
       select: false,
-      resetCode: { type: String, select: false },
-      resetExpires: { type: Date, select: false },
-      resetAttempts: { type: Number, default: 0, select: false },
-      passwordChangedAt: { type: Date },
     },
+    resetCode: { type: String, select: false },
+    resetExpires: { type: Date, select: false },
+    resetAttempts: { type: Number, default: 0, select: false },
+    passwordChangedAt: { type: Date },
   },
   {
     timestamps: true,

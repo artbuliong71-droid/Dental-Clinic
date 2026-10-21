@@ -1,5 +1,3 @@
-const path = require("path");
-const { execFile } = require("child_process");
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const Patient = require("../models/Patient");
@@ -7,6 +5,7 @@ const Dentist = require("../models/Dentist");
 const Appointment = require("../models/Appointment");
 const DentalService = require("../models/DentalService");
 const asyncHandler = require("../utils/asyncHandler");
+const { runNow, isRunning } = require("../utils/analyticsService");
 
 // @desc    Admin views all user accounts (optional ?role= filter)
 // @route   GET /api/admin/users
@@ -104,9 +103,7 @@ const getStats = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Admin views analytics computed by the PySpark script
-// @route   GET /api/admin/analytics
-// @desc    Admin views analytics computed by the PySpark script
+// @desc    Admin views analytics computed by the PySpark service
 // @route   GET /api/admin/analytics
 const getAnalytics = asyncHandler(async (req, res) => {
   // Raw collection ang gamit dahil string ("latest") ang _id, hindi ObjectId
@@ -122,64 +119,25 @@ const getAnalytics = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: doc });
 });
 
-let analyticsRunning = null;
-
-const runAnalyticsJob = () => {
-  if (analyticsRunning) return analyticsRunning; // kung tumatakbo na, hintayin na lang iyon
-
-  const sparkDir = path.join(__dirname, "../../pyspark-analytics");
-  const python = path.join(sparkDir, ".venv", "Scripts", "python.exe");
-  const jdk = "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot";
-
-  analyticsRunning = new Promise((resolve, reject) => {
-    execFile(
-      python,
-      ["clinic_analytics.py"],
-      {
-        cwd: sparkDir,
-        timeout: 5 * 60 * 1000,
-        env: {
-          ...process.env,
-          JAVA_HOME: jdk,
-          PATH: `${jdk}\\bin;${process.env.PATH}`,
-        },
-      },
-      (err, stdout, stderr) => {
-        analyticsRunning = null;
-        if (err) {
-          console.error(stderr);
-          return reject(new Error("Analytics refresh failed"));
-        }
-        resolve(stdout);
-      },
-    );
-  });
-
-  return analyticsRunning;
-};
-
-// @desc    Starts the PySpark job in the background and returns right away
+// @desc    Recompute analytics now (the Spark service is already running)
 // @route   POST /api/admin/analytics/refresh
 const refreshAnalytics = asyncHandler(async (req, res) => {
-  const alreadyRunning = !!analyticsRunning;
-  runAnalyticsJob().catch(() => {}); // hindi hinihintay; naka-log na ang error
+  const alreadyRunning = isRunning();
+  runNow(); // hindi hinihintay
 
   const doc = await mongoose.connection.db
     .collection("analytics_results")
     .findOne({ _id: "latest" });
 
-  res.status(202).json({
-    success: true,
-    running: true,
-    alreadyRunning,
-    data: doc,
-  });
+  res
+    .status(202)
+    .json({ success: true, running: true, alreadyRunning, data: doc });
 });
 
-// @desc    Tells the dashboard if the job is still running
+// @desc    Is the analytics job running right now?
 // @route   GET /api/admin/analytics/status
 const getAnalyticsStatus = asyncHandler(async (req, res) => {
-  res.status(200).json({ success: true, running: !!analyticsRunning });
+  res.status(200).json({ success: true, running: isRunning() });
 });
 
 module.exports = {
@@ -189,5 +147,4 @@ module.exports = {
   getAnalytics,
   refreshAnalytics,
   getAnalyticsStatus,
-  runAnalyticsJob,
 };

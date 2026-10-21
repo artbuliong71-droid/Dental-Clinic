@@ -1,8 +1,14 @@
-// src/components/Navbar.jsx
 import { useAuth } from "../context/AuthContext";
 import { Menu } from "lucide-react";
-// Change this path if your logo lives somewhere else.
+import NotificationBell from "./NotificationBell";
 import logo from "../assets/logo.jpg";
+
+// Display names only. The real role value stays "admin" because the backend checks for it.
+const ROLE_LABELS = {
+  admin: "Super Admin",
+  staff: "Staff",
+  patient: "Patient",
+};
 
 const Navbar = ({ onBurgerClick }) => {
   const { user } = useAuth();
@@ -25,8 +31,11 @@ const Navbar = ({ onBurgerClick }) => {
       </div>
       {user && (
         <div className="navbar-user">
+          {user.role === "patient" && <NotificationBell />}
           <span>{user.name}</span>
-          <span className="role-pill">{user.role}</span>
+          <span className="role-pill">
+            {ROLE_LABELS[user.role] || user.role}
+          </span>
         </div>
       )}
     </div>

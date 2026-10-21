@@ -50,3 +50,8 @@ export const getAnalyticsStatus = async () => {
   const response = await api.get("/admin/analytics/status");
   return response.data;
 };
+// Audit logs (admin only)
+export const getAuditLogs = async (params) => {
+  const response = await api.get("/admin/audit-logs", { params });
+  return response.data;
+};

@@ -16,7 +16,7 @@ const issueOTP = async (user) => {
   const otp = generateOTP();
   user.otpCode = await bcrypt.hash(otp, 10);
   user.otpExpires = new Date(Date.now() + OTP_VALID_MS);
-  await user.save();
+  await user.save({ validateBeforeSave: false });
 
   await sendEmail({
     to: user.email,
@@ -28,8 +28,7 @@ const issueOTP = async (user) => {
 
 // Register user
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role, phone, licenseNumber, specialization } =
-    req.body;
+  const { name, email, password, phone } = req.body;
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
@@ -37,12 +36,21 @@ const register = asyncHandler(async (req, res) => {
     throw new Error("An account with this email already exists");
   }
 
+  // Phone is optional, but if given it must not belong to another account
+  if (phone) {
+    const phoneTaken = await User.findOne({ phone });
+    if (phoneTaken) {
+      res.status(400);
+      throw new Error("An account with this phone number already exists");
+    }
+  }
+
   const user = await User.create({
     name,
     email,
     password,
     role: "patient", // public registration ay patient lang palagi
-    phone,
+    phone: phone || undefined,
   });
 
   await Patient.create({ user: user._id });
@@ -70,9 +78,15 @@ const login = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email }).select("+password");
 
-  if (!user || !(await user.comparePassword(password))) {
+  // 401 (not 404) on purpose, so the audit log still records the failed attempt
+  if (!user) {
     res.status(401);
-    throw new Error("Invalid email or password");
+    throw new Error("Account not found");
+  }
+
+  if (!(await user.comparePassword(password))) {
+    res.status(401);
+    throw new Error("Incorrect password");
   }
 
   if (!user.isActive) {
@@ -81,6 +95,18 @@ const login = asyncHandler(async (req, res) => {
       "This account has been deactivated. Please contact the clinic.",
     );
   }
+
+  // Password is correct — generate a one-time code and email it before issuing a token
+  await issueOTP(user);
+
+  res.status(200).json({
+    success: true,
+    message:
+      "Password verified. A verification code has been sent to your email.",
+    data: {
+      email: user.email, // frontend needs this to know which account to verify next
+    },
+  });
 
   // Password is correct — generate a one-time code and email it before issuing a token
   await issueOTP(user);
@@ -163,7 +189,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
   // Clear the OTP so it cannot be reused (one-time use only)
   user.otpCode = undefined;
   user.otpExpires = undefined;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
 
   const token = generateToken(user._id, user.role);
 

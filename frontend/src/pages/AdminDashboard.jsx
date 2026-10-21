@@ -23,7 +23,9 @@ import {
   FileText,
   Eye,
   EyeOff,
+  ShieldCheck,
 } from "lucide-react";
+
 import {
   getStats,
   getAllAppointments,
@@ -42,6 +44,7 @@ import CalendarView from "../components/CalendarView";
 import PatientsView from "../components/PatientsView";
 import PatientRecord from "../components/PatientRecord";
 import AnalyticsView from "../components/AnalyticsView";
+import AuditLogsView from "../components/AuditLogsView";
 import DentistsView from "../components/DentistsView";
 import {
   formatDate,
@@ -55,15 +58,14 @@ import "../components/dashboard.css";
 import "../components/manage.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const NAME_REGEX = /^\p{L}[\p{L}\s.'-]*$/u;
+const NAME_REGEX = /^\p{L}[\p{L}\s]*$/u;
 const PHONE_REGEX = /^09\d{9}$/;
 
 const validateStaff = ({ name, email, password, phone }) => {
   const errors = {};
   if (!name.trim()) errors.name = "Full name is required.";
   else if (!NAME_REGEX.test(name.trim()))
-    errors.name =
-      "Name can only contain letters, spaces, apostrophes, hyphens and periods.";
+    errors.name = "Name can only contain letters and spaces.";
   if (!email.trim()) errors.email = "Email is required.";
   else if (!EMAIL_REGEX.test(email.trim()))
     errors.email = "Enter a valid email, like name@example.com.";
@@ -118,6 +120,7 @@ const AdminDashboard = () => {
     { key: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
     { key: "schedule", label: "Schedule", icon: <CalendarCheck size={18} /> },
     { key: "closures", label: "Closed Dates", icon: <CalendarX size={18} /> },
+    { key: "audit", label: "Audit Logs", icon: <ShieldCheck size={18} /> },
     {
       key: "appointments",
       label: "Appointments",
@@ -139,7 +142,20 @@ const AdminDashboard = () => {
     loadClosedDates();
     loadAnalytics();
   }, []);
-
+  useEffect(() => {
+    if (activeView !== "analytics") return;
+    const id = setInterval(async () => {
+      try {
+        const res = await getAnalytics();
+        setAnalytics((prev) =>
+          prev && prev.generatedAt === res.data.generatedAt ? prev : res.data,
+        );
+      } catch {
+        /* huwag istorbohin ang user kapag pumalya sandali */
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [activeView]);
   const loadData = async () => {
     try {
       const [statsRes, appointmentsRes, servicesRes] = await Promise.all([
@@ -888,7 +904,16 @@ const AdminDashboard = () => {
                   refreshing={refreshing}
                 />
               )}
-
+              {/* ---------------- Audit logs ---------------- */}
+              {activeView === "audit" && (
+                <div>
+                  <h2>Audit Logs</h2>
+                  <p className="page-sub">
+                    A read-only history of logins and account changes.
+                  </p>
+                  <AuditLogsView />
+                </div>
+              )}
               {/* ---------------- Staff accounts ---------------- */}
               {activeView === "staff" && (
                 <div>

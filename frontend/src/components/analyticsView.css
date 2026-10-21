@@ -1,0 +1,362 @@
+/* ---------- Header ---------- */
+.ax-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.ax-head h2 {
+  margin: 0 0 6px;
+}
+.ax-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #475569;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.ax-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+.ax-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ax-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.ax-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+.ax-btn:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.ax-spin {
+  animation: ax-rotate 1s linear infinite;
+}
+@keyframes ax-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Stat cards ---------- */
+.ax-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.ax-stat {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+.ax-stat-icon {
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--c) 14%, white);
+  color: var(--c);
+}
+.ax-stat-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+}
+.ax-stat-label {
+  font-size: 0.95rem;
+  color: #64748b;
+}
+
+/* ---------- Cards grid ---------- */
+.ax-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.ax-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  min-width: 0;
+}
+.ax-wide {
+  grid-column: 1 / -1;
+}
+.ax-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ax-card h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.ax-sub {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+.ax-empty {
+  color: #64748b;
+  padding: 24px 0;
+}
+
+.ax-select {
+  flex: none;
+  border: 1px solid #dbe2ec;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.ax-select:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+/* ---------- SVG charts ---------- */
+.ax-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ax-chart text {
+  font-family: inherit;
+}
+.ax-grid-line {
+  stroke: #e8edf5;
+  stroke-width: 1;
+}
+.ax-tick {
+  fill: #64748b;
+  font-size: 12px;
+}
+.ax-bval {
+  fill: #1e3a8a;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ax-axis-title {
+  fill: #475569;
+  font-size: 12px;
+}
+
+/* ---------- Horizontal bars (services) ---------- */
+.ax-hb {
+  --lw: 140px;
+  --rw: 36px;
+}
+.ax-hb-body {
+  position: relative;
+  padding: 4px 0;
+}
+.ax-hb-grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--lw);
+  right: var(--rw);
+  pointer-events: none;
+}
+.ax-hb-grid i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #e8edf5;
+}
+.ax-hb-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--lw) minmax(0, 1fr);
+  align-items: center;
+  height: 36px;
+}
+.ax-hb-name {
+  padding-right: 12px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ax-hb-plot {
+  padding-right: var(--rw);
+}
+.ax-hb-track {
+  position: relative;
+  height: 22px;
+}
+.ax-hb-bar {
+  height: 100%;
+  min-width: 3px;
+  border-radius: 0 6px 6px 0;
+  transition: width 0.4s ease;
+}
+.ax-hb-track b {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+.ax-hb-axis {
+  position: relative;
+  height: 20px;
+  margin: 4px var(--rw) 0 var(--lw);
+}
+.ax-hb-axis span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.78rem;
+  color: #64748b;
+}
+.ax-axis-title-h {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+/* ---------- Donut ---------- */
+.ax-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.ax-donut {
+  position: relative;
+  width: 230px;
+  height: 230px;
+  flex: none;
+}
+.ax-donut svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ax-donut-pct {
+  fill: #fff;
+  font-size: 2.3px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.ax-donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.ax-donut-center strong {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+.ax-donut-center span {
+  font-size: 0.85rem;
+  color: #475569;
+}
+.ax-legend {
+  flex: 1;
+  min-width: 200px;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+.ax-legend td {
+  padding: 11px 6px;
+  border-bottom: 1px solid #eef2f7;
+}
+.ax-legend tr:last-child td {
+  border-bottom: 0;
+}
+.ax-legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: -1px;
+}
+.ax-legend .num {
+  text-align: right;
+  font-weight: 600;
+}
+.ax-legend .muted {
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .ax-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .ax-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .ax-stats {
+    grid-template-columns: 1fr;
+  }
+  .ax-hb {
+    --lw: 96px;
+  }
+  .ax-card {
+    padding: 16px;
+  }
+}

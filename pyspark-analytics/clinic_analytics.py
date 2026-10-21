@@ -5,8 +5,9 @@ Reads appointments, services and patients from MongoDB, computes the numbers
 shown on the admin "Analytics" page with Spark, and saves them in the
 `analytics_results` collection (one document with _id "latest").
 
-Run it by hand:   python clinic_analytics.py
-or from the admin Analytics page (the "Refresh" button runs this same script).
+Run it by hand:     python clinic_analytics.py
+Run as a service:   python clinic_analytics.py --serve 5001
+                    (Spark stays on; the backend sends POST /run after every change)
 """
 import os
 import shutil
@@ -60,7 +61,7 @@ def load_rows(db):
     kept = [a for a in all_appointments if a.get("patient") in patient_ids]
     skipped = len(all_appointments) - len(kept)
     if skipped:
-        print(f"Ignored {skipped} appointment(s) that belong to deleted patients")
+        print(f"Ignored {skipped} appointment(s) that belong to deleted patients", flush=True)
 
     appointments = [
         {
@@ -92,7 +93,7 @@ def ensure_java():
 
     home = os.environ.get("JAVA_HOME")
     if home and not (Path(home) / "bin" / exe).exists():
-        print(f"JAVA_HOME points to a folder that does not exist ({home}). Ignoring it.")
+        print(f"JAVA_HOME points to a folder that does not exist ({home}). Ignoring it.", flush=True)
         os.environ.pop("JAVA_HOME", None)
         home = None
     if home:
@@ -110,7 +111,7 @@ def ensure_java():
             best = sorted(found, key=lambda p: p.name)[-1]  # newest version folder
             os.environ["JAVA_HOME"] = str(best)
             os.environ["PATH"] = str(best / "bin") + os.pathsep + os.environ.get("PATH", "")
-            print(f"Using Java from {best}")
+            print(f"Using Java from {best}", flush=True)
             return
 
     if shutil.which("java"):
@@ -124,6 +125,7 @@ def ensure_java():
 
 # --------------------------------------------------------------------- Spark
 def build_spark():
+    ensure_java()
     spark = (
         SparkSession.builder.appName("GerminoPunzalAnalytics")
         .master("local[*]")
@@ -221,6 +223,30 @@ def compute(spark, appointments, services, patients, today=None):
             "revenue": round(float(r["revenue"] or 0), 2) if r else 0.0,
         })
 
+    # ---- appointments per year (all statuses)
+    year_rows = (
+        joined.filter(F.col("date").isNotNull())
+        .groupBy(F.year("date").alias("year"))
+        .agg(
+            F.count("*").alias("total"),
+            F.sum(F.when(is_completed, 1).otherwise(0)).alias("completed"),
+            F.sum(F.when(is_cancelled, 1).otherwise(0)).alias("cancelled"),
+            F.sum("revenue").alias("revenue"),
+        )
+        .orderBy("year")
+        .collect()
+    )
+    yearly = [
+        {
+            "year": int(r["year"]),
+            "total": int(r["total"]),
+            "completed": int(r["completed"]),
+            "cancelled": int(r["cancelled"]),
+            "revenue": round(float(r["revenue"] or 0), 2),
+        }
+        for r in year_rows
+    ]
+
     # ---- most booked services (cancelled bookings are not counted)
     top_rows = (
         joined.filter(~is_cancelled)
@@ -249,6 +275,17 @@ def compute(spark, appointments, services, patients, today=None):
     dow_counts = {r["dow"]: int(r["count"]) for r in active.groupBy("dow").count().collect() if r["dow"] is not None}
     busiest_days = [{"day": name, "count": dow_counts.get(n, 0)} for n, name in WEEKDAY_ORDER]
 
+    # ---- how many different patients booked, per weekday and per month (cancelled not counted)
+    pd_rows = active.groupBy("dow").agg(F.countDistinct("patient").alias("patients")).collect()
+    pd_counts = {r["dow"]: int(r["patients"]) for r in pd_rows if r["dow"] is not None}
+    patients_by_day = [{"day": name, "patients": pd_counts.get(n, 0)} for n, name in WEEKDAY_ORDER]
+
+    pm_rows = active.groupBy("month").agg(F.countDistinct("patient").alias("patients")).collect()
+    pm_counts = {r["month"]: int(r["patients"]) for r in pm_rows if r["month"]}
+    patients_by_month = [
+        {"month": m, "patients": pm_counts.get(m, 0)} for m in last_months(MONTHS_SHOWN, today)
+    ]
+
     # ---- patients
     pats = spark.createDataFrame(patients, pat_schema).withColumn("month", F.date_format(F.to_date("created"), "yyyy-MM"))
     total_patients = pats.count()
@@ -269,37 +306,110 @@ def compute(spark, appointments, services, patients, today=None):
     return {
         "summary": summary,
         "monthly": monthly,
+        "yearly": yearly,
         "topServices": top_services,
         "busiestHours": busiest_hours,
         "busiestDays": busiest_days,
         "newPatients": new_patients,
         "patients": patient_stats,
+        "patientsByDay": patients_by_day,
+        "patientsByMonth": patients_by_month,
     }
 
 
 # ---------------------------------------------------------------------- main
-def main():
+def run_analytics(spark):
+    """Read MongoDB, compute with the given Spark session, save to analytics_results."""
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=8000)
-    db = client.get_default_database(default=DEFAULT_DB)
+    try:
+        db = client.get_default_database(default=DEFAULT_DB)
+        appointments, services, patients = load_rows(db)
+        print(f"Loaded {len(appointments)} appointments, {len(services)} services, {len(patients)} patients", flush=True)
 
-    appointments, services, patients = load_rows(db)
-    print(f"Loaded {len(appointments)} appointments, {len(services)} services, {len(patients)} patients")
+        metrics = compute(spark, appointments, services, patients)
+        document = {"_id": "latest", "generatedAt": datetime.now(timezone.utc), **metrics}
+        db.analytics_results.replace_one({"_id": "latest"}, document, upsert=True)
+        print("Analytics saved to the analytics_results collection.", flush=True)
+    finally:
+        client.close()
 
-    ensure_java()
+
+def main():
+    """One-time run (python clinic_analytics.py)."""
     spark = build_spark()
     try:
-        metrics = compute(spark, appointments, services, patients)
+        run_analytics(spark)
     finally:
         spark.stop()
 
-    document = {"_id": "latest", "generatedAt": datetime.now(timezone.utc), **metrics}
-    db.analytics_results.replace_one({"_id": "latest"}, document, upsert=True)
-    print("Analytics saved to the analytics_results collection.")
+
+def serve(port):
+    """Keep Spark running and recompute whenever the backend sends POST /run."""
+    import json
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    spark = build_spark()
+    lock = threading.Lock()
+
+    def compute_locked():
+        with lock:  # isa lang ang tumatakbo sa isang oras
+            run_analytics(spark)
+
+    class Handler(BaseHTTPRequestHandler):
+        def _reply(self, code, payload):
+            body = json.dumps(payload).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            if self.path == "/health":
+                self._reply(200, {"ok": True})
+            else:
+                self._reply(404, {"ok": False})
+
+        def do_POST(self):
+            if self.path != "/run":
+                return self._reply(404, {"ok": False})
+            try:
+                compute_locked()
+                self._reply(200, {"ok": True})
+            except Exception as exc:
+                print(f"ERROR: {exc}", file=sys.stderr, flush=True)
+                self._reply(500, {"ok": False, "error": str(exc)})
+
+        def log_message(self, *args):  # walang ingay sa terminal
+            pass
+
+    # Buksan muna ang port, para hindi mawala ang request habang nagsisimula pa
+    # 127.0.0.1 lang: ang backend lang sa computer na ito ang makakatawag
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    print(f"Analytics service ready on http://127.0.0.1:{port}", flush=True)
+
+    def first_run():
+        try:
+            compute_locked()
+        except Exception as exc:
+            print(f"ERROR on first run: {exc}", file=sys.stderr, flush=True)
+
+    threading.Thread(target=first_run, daemon=True).start()
+
+    try:
+        server.serve_forever()
+    finally:
+        spark.stop()
 
 
 if __name__ == "__main__":
     try:
-        main()
+        if "--serve" in sys.argv:
+            i = sys.argv.index("--serve")
+            serve(int(sys.argv[i + 1]) if len(sys.argv) > i + 1 else 5001)
+        else:
+            main()
     except Exception as exc:  # the backend shows a friendly message based on this output
         print(f"ERROR: {exc}", file=sys.stderr)
         raise SystemExit(1)

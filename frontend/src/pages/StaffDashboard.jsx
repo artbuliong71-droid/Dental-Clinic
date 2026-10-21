@@ -7,6 +7,9 @@ import AppointmentsManager from "../components/AppointmentsManager";
 import CalendarView from "../components/CalendarView";
 import ClosedDatesView from "../components/ClosedDatesView";
 import { getClosedDates } from "../api/closedDatesApi";
+import { getServices } from "../api/servicesApi";
+import { getDentists } from "../api/dentistsApi";
+import WalkInView from "../components/WalkInView";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -15,6 +18,7 @@ import {
   Hourglass,
   Check,
   ClipboardList,
+  UserPlus,
 } from "lucide-react";
 import { todayStr } from "../utils/dateUtils";
 import "../components/dashboard.css";
@@ -25,6 +29,8 @@ const StaffDashboard = () => {
 
   const [appointments, setAppointments] = useState([]);
   const [closedDates, setClosedDates] = useState([]);
+  const [services, setServices] = useState([]);
+  const [dentists, setDentists] = useState([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [dataLoading, setDataLoading] = useState(true);
@@ -39,6 +45,7 @@ const StaffDashboard = () => {
       label: "Appointments",
       icon: <CalendarDays size={18} />,
     },
+    { key: "walkin", label: "Walk-in", icon: <UserPlus size={18} /> },
     { key: "closures", label: "Closed Dates", icon: <CalendarX size={18} /> },
   ];
 
@@ -47,8 +54,13 @@ const StaffDashboard = () => {
     getClosedDates()
       .then((res) => setClosedDates(res.data))
       .catch(() => setClosedDates([]));
+    getServices()
+      .then((res) => setServices(res.data))
+      .catch(() => setServices([]));
+    getDentists()
+      .then((res) => setDentists(res.data))
+      .catch(() => setDentists([]));
   }, []);
-
   const loadAppointments = async () => {
     try {
       const response = await getAllAppointments();
@@ -199,6 +211,13 @@ const StaffDashboard = () => {
                     onStatusUpdate={handleStatusUpdate}
                   />
                 </div>
+              )}
+              {activeView === "walkin" && (
+                <WalkInView
+                  services={services}
+                  dentists={dentists}
+                  onBooked={loadAppointments}
+                />
               )}
               {activeView === "closures" && (
                 <div>
