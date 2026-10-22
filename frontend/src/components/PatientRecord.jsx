@@ -38,6 +38,8 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
   const [message, setMessage] = useState("");
   const [noteFor, setNoteFor] = useState(null);
   const [savingNote, setSavingNote] = useState(false);
+  // Mga visit na HINDI isasama sa print (lahat ay kasama sa simula)
+  const [excluded, setExcluded] = useState(() => new Set());
 
   const load = async () => {
     try {
@@ -53,9 +55,11 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
 
   useEffect(() => {
     setLoading(true);
+    setExcluded(new Set());
     load();
   }, [patient._id]);
 
+  // Completed lang ang ipinapakita. Walang Cancelled o Pending.
   const visits = useMemo(
     () =>
       appointments
@@ -64,7 +68,7 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
             a.patient && typeof a.patient === "object"
               ? a.patient._id
               : a.patient;
-          return pid === patient.patientId;
+          return pid === patient.patientId && a.status === "Completed";
         })
         .sort((a, b) => apptWhen(b) - apptWhen(a)),
     [appointments, patient.patientId],
@@ -75,6 +79,22 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
     notes.forEach((n) => (map[String(n.appointment)] = n));
     return map;
   }, [notes]);
+
+  const selectedCount = visits.filter((a) => !excluded.has(a._id)).length;
+  const allSelected = visits.length > 0 && selectedCount === visits.length;
+
+  const toggleVisit = (id) => {
+    setExcluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setExcluded(allSelected ? new Set(visits.map((a) => a._id)) : new Set());
+  };
 
   const handleSaveNote = async (appointmentId, data) => {
     setError("");
@@ -122,8 +142,15 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
             type="button"
             className="btn-ghost"
             onClick={() => window.print()}
+            disabled={selectedCount === 0}
+            title={
+              selectedCount === 0
+                ? "Select at least one record to print"
+                : "Print the selected records"
+            }
           >
             <Printer size={16} /> Print
+            {visits.length > 0 ? ` (${selectedCount})` : ""}
           </button>
         </div>
       </div>
@@ -174,19 +201,47 @@ const PatientRecord = ({ patient, appointments, onBack }) => {
             )}
           </section>
 
-          <h3 className="group-title">Visit history ({visits.length})</h3>
+          <div className="visit-toolbar">
+            <h3 className="group-title">
+              Visit history
+              <span className="no-print"> ({visits.length})</span>
+            </h3>
+            {visits.length > 0 && (
+              <label className="visit-pick no-print">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                />
+                Select all to print
+              </label>
+            )}
+          </div>
+
           {visits.length === 0 ? (
             <div className="empty-state">
-              <p>No visits yet.</p>
+              <p>No completed visits yet.</p>
             </div>
           ) : (
             <ul className="visit-list">
               {visits.map((a) => {
                 const note = notesById[String(a._id)];
+                const included = !excluded.has(a._id);
                 return (
-                  <li key={a._id} className="visit">
+                  <li
+                    key={a._id}
+                    className={`visit ${included ? "" : "unselected no-print"}`}
+                  >
                     <div className="visit-head">
-                      <div>
+                      <label className="visit-pick no-print">
+                        <input
+                          type="checkbox"
+                          checked={included}
+                          onChange={() => toggleVisit(a._id)}
+                          aria-label={`Print ${a.service?.name || "visit"}`}
+                        />
+                      </label>
+                      <div className="visit-title">
                         <strong>{a.service?.name}</strong>
                         <span className="visit-meta">
                           {formatDate(a.appointmentDate)} at{" "}

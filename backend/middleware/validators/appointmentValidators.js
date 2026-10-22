@@ -32,6 +32,15 @@ const createAppointmentValidation = [
     .withMessage("Reason cannot exceed 500 characters"),
 ];
 
+// A reason is required when the patient reschedules or cancels
+const requiredReason = (field) =>
+  body(field)
+    .trim()
+    .notEmpty()
+    .withMessage("Please give a reason")
+    .isLength({ min: 3, max: 300 })
+    .withMessage("Reason must be between 3 and 300 characters");
+
 const rescheduleValidation = [
   body("appointmentDate")
     .notEmpty()
@@ -44,7 +53,14 @@ const rescheduleValidation = [
     .withMessage("Appointment time is required")
     .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
     .withMessage("Appointment time must be in HH:mm format"),
+
+  // Optional: the patient can also switch to a different service
+  body("service").optional().isMongoId().withMessage("Invalid service ID"),
+
+  requiredReason("rescheduleReason"),
 ];
+
+const cancelValidation = [requiredReason("cancellationReason")];
 
 const updateStatusValidation = [
   body("status")
@@ -63,5 +79,6 @@ const updateStatusValidation = [
 module.exports = {
   createAppointmentValidation,
   rescheduleValidation,
+  cancelValidation,
   updateStatusValidation,
 };

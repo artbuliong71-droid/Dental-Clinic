@@ -55,15 +55,36 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: [300, "Cancellation reason cannot exceed 300 characters"],
-      source: {
-        type: String,
-        enum: ["online", "walk-in"],
-        default: "online",
+    },
+    cancelledAt: { type: Date },
+
+    // Every time the patient moves the appointment (or changes the service),
+    // the OLD details and the reason are kept here.
+    rescheduleHistory: [
+      {
+        fromDate: { type: Date, required: true },
+        fromTime: { type: String, required: true },
+        fromServiceName: { type: String, default: "" },
+        reason: {
+          type: String,
+          trim: true,
+          required: true,
+          maxlength: [300, "Reason cannot exceed 300 characters"],
+        },
+        changedAt: { type: Date, default: Date.now },
       },
-      createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
+    ],
+
+    // These two were nested inside cancellationReason by mistake, so they were
+    // never real fields. They are top-level fields now.
+    source: {
+      type: String,
+      enum: ["online", "walk-in"],
+      default: "online",
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   {

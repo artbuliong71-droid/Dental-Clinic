@@ -153,6 +153,13 @@ h3 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
+  /* Nakadikit sa ilalim ng navbar habang nag-i-scroll ang page */
+  position: sticky;
+  top: 62px; /* taas ng navbar */
+  height: calc(100vh - 62px);
+  align-self: flex-start;
+  overflow-y: auto; /* sariling scroll kung maliit ang screen */
 }
 
 .sidebar-menu {
@@ -426,6 +433,7 @@ h3 {
     top: 56px;
     left: 0;
     bottom: 0;
+    height: auto;
     z-index: 15;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
@@ -523,4 +531,261 @@ html:root {
   font-weight: 600;
   border: 1.5px solid var(--soft);
   border-radius: 8px;
+}
+/* ===================================== */
+/* RESCHEDULE / CANCEL WINDOW (patient)  */
+/* ===================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(45, 35, 71, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal {
+  background: var(--white);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 540px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  box-shadow: 0 24px 60px rgba(45, 35, 71, 0.35);
+}
+
+.modal h3 {
+  margin: 0 0 0.25rem;
+  color: var(--deep);
+  font-size: 1.2rem;
+}
+
+.modal-current {
+  margin: 0 0 1rem;
+  color: var(--muted-text);
+  font-size: 0.9rem;
+}
+
+.modal .error-message {
+  margin-bottom: 0.8rem;
+}
+
+.modal .field textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+  resize: vertical;
+  color: var(--dark-text);
+  background: #fff;
+  border: 1.5px solid var(--soft);
+  border-radius: 8px;
+}
+
+.modal .field textarea:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.modal-fields {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--soft);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.modal-fields .form-hint {
+  margin: 0;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.choice-card {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.8rem;
+  border: 1.5px solid var(--soft);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--primary);
+}
+
+.choice-card strong {
+  display: block;
+  color: var(--dark-text);
+}
+
+.choice-card small {
+  display: block;
+  color: var(--muted-text);
+  font-size: 0.78rem;
+}
+
+.choice-card.selected {
+  border-color: var(--primary);
+  background: var(--light);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.choice-card.danger {
+  color: var(--error-red);
+}
+
+.choice-card.danger.selected {
+  border-color: var(--error-red);
+  background: #fff5f5;
+  box-shadow: 0 0 0 1px var(--error-red);
+}
+
+.choice-card:has(input:focus-visible) {
+  outline: 3px solid rgba(123, 31, 162, 0.35);
+  outline-offset: 2px;
+}
+
+.modal-hint {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-top: 0.8rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--light);
+  border: 1px solid var(--soft);
+  border-radius: 10px;
+  color: var(--deep);
+  font-size: 0.88rem;
+}
+
+.modal-hint svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary);
+}
+
+.modal-hint .link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+.btn-secondary {
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  background: #fff;
+  color: var(--primary-dark);
+  border: 1.5px solid var(--soft);
+}
+
+.btn-secondary:hover {
+  border-color: var(--primary);
+}
+
+.btn-danger {
+  padding: 0.7rem 1.2rem;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  background: var(--error-red);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #9b2424;
+}
+
+.btn-danger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* Reminder: patient has not filled in their profile yet */
+.profile-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--white);
+  border: 1px solid var(--soft);
+  border-left: 4px solid var(--primary);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(91, 33, 150, 0.08);
+}
+
+.profile-banner-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--light);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.profile-banner-text {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.profile-banner-text strong {
+  color: var(--deep);
+}
+
+.profile-banner-text span {
+  font-size: 0.88rem;
+  color: var(--muted-text);
+}
+
+.profile-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .profile-banner-actions {
+    width: 100%;
+  }
+  .profile-banner-actions button {
+    flex: 1;
+  }
 }

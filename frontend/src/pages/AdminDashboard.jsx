@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import AppointmentsManager from "../components/AppointmentsManager";
 import ClosedDatesView from "../components/ClosedDatesView";
+import useIdleLogout from "../utils/useIdleLogout";
 import {
   getClosedDates,
   addClosedDate,
@@ -24,6 +25,7 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 
 import {
@@ -37,6 +39,8 @@ import {
   getAnalytics,
   refreshAnalytics,
   getAnalyticsStatus,
+  getSettings,
+  updateSettings,
 } from "../api/adminApi";
 import { getServices, createService } from "../api/servicesApi";
 import { getDentists } from "../api/dentistsApi";
@@ -88,8 +92,30 @@ const emptyService = {
 };
 const emptyStaff = { name: "", email: "", password: "", phone: "" };
 
+// Para hindi bumalik sa Overview kapag nag-reload
+const VIEW_KEY = "adminActiveView";
+const VALID_VIEWS = [
+  "overview",
+  "schedule",
+  "closures",
+  "audit",
+  "appointments",
+  "records",
+  "services",
+  "patients",
+  "dentists",
+  "analytics",
+  "staff",
+  "settings",
+];
+
+// Mga pagpipilian sa Settings > Session timeout (minuto)
+const TIMEOUT_OPTIONS = [5, 10, 15, 30, 60, 120];
+const timeoutLabel = (m) =>
+  m < 60 ? `${m} minutes` : `${m / 60} hour${m > 60 ? "s" : ""}`;
+
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [stats, setStats] = useState(null);
   const [appointments, setAppointments] = useState([]);
@@ -110,10 +136,21 @@ const AdminDashboard = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Settings: session timeout (minuto). null = hindi pa na-load, walang timer.
+  const [sessionTimeout, setSessionTimeout] = useState(null);
+  const [timeoutInput, setTimeoutInput] = useState("30");
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [dataLoading, setDataLoading] = useState(true);
-  const [activeView, setActiveView] = useState("overview");
+  const [activeView, setActiveView] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(VIEW_KEY);
+      return VALID_VIEWS.includes(saved) ? saved : "overview";
+    } catch {
+      return "overview";
+    }
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sidebarItems = [
@@ -132,7 +169,17 @@ const AdminDashboard = () => {
     { key: "dentists", label: "Dentists", icon: <Stethoscope size={18} /> },
     { key: "analytics", label: "Analytics", icon: <TrendingUp size={18} /> },
     { key: "staff", label: "Staff Accounts", icon: <UserCheck size={18} /> },
+    { key: "settings", label: "Settings", icon: <Settings size={18} /> },
   ];
+
+  // Tandaan ang kasalukuyang tab
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, activeView);
+    } catch {
+      /* ignore */
+    }
+  }, [activeView]);
 
   useEffect(() => {
     loadData();
@@ -142,6 +189,27 @@ const AdminDashboard = () => {
     loadClosedDates();
     loadAnalytics();
   }, []);
+
+  // I-load ang session timeout mula sa Settings
+  useEffect(() => {
+    getSettings()
+      .then((res) => {
+        setSessionTimeout(res.data.sessionTimeoutMinutes);
+        setTimeoutInput(String(res.data.sessionTimeoutMinutes));
+      })
+      .catch(() => setSessionTimeout(30)); // default kung pumalya
+  }, []);
+
+  // Auto-logout kapag walang galaw ng ilang minuto
+  useIdleLogout(sessionTimeout, () => {
+    try {
+      sessionStorage.setItem("sessionExpired", "1");
+    } catch {
+      /* ignore */
+    }
+    logout();
+  });
+
   useEffect(() => {
     if (activeView !== "analytics") return;
     const id = setInterval(async () => {
@@ -156,6 +224,7 @@ const AdminDashboard = () => {
     }, 5000);
     return () => clearInterval(id);
   }, [activeView]);
+
   const loadData = async () => {
     try {
       const [statsRes, appointmentsRes, servicesRes] = await Promise.all([
@@ -363,6 +432,25 @@ const AdminDashboard = () => {
       loadData();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to add service.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* ---------- Settings ---------- */
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    setSaving(true);
+    try {
+      const res = await updateSettings({
+        sessionTimeoutMinutes: Number(timeoutInput),
+      });
+      setSessionTimeout(res.data.sessionTimeoutMinutes); // gumagana agad
+      setMessage("Settings saved.");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save the settings.");
     } finally {
       setSaving(false);
     }
@@ -904,6 +992,7 @@ const AdminDashboard = () => {
                   refreshing={refreshing}
                 />
               )}
+
               {/* ---------------- Audit logs ---------------- */}
               {activeView === "audit" && (
                 <div>
@@ -914,6 +1003,50 @@ const AdminDashboard = () => {
                   <AuditLogsView />
                 </div>
               )}
+
+              {/* ---------------- Settings ---------------- */}
+              {activeView === "settings" && (
+                <div>
+                  <h2>Settings</h2>
+                  <p className="page-sub">
+                    Control how long the dashboard stays signed in.
+                  </p>
+
+                  <form onSubmit={handleSaveSettings} className="form-section">
+                    <h3>Session timeout</h3>
+                    <p className="form-hint">
+                      You are signed out automatically after this much time
+                      without any activity.
+                    </p>
+                    <div className="form-grid">
+                      <div className="field">
+                        <label htmlFor="session-timeout">Sign out after</label>
+                        <select
+                          id="session-timeout"
+                          value={timeoutInput}
+                          onChange={(e) => setTimeoutInput(e.target.value)}
+                        >
+                          {TIMEOUT_OPTIONS.map((m) => (
+                            <option key={m} value={m}>
+                              {timeoutLabel(m)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-actions">
+                      <button
+                        type="submit"
+                        className="btn-primary-sm"
+                        disabled={saving}
+                      >
+                        {saving ? "Saving..." : "Save settings"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
               {/* ---------------- Staff accounts ---------------- */}
               {activeView === "staff" && (
                 <div>

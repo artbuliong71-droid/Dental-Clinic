@@ -55,3 +55,13 @@ export const getAuditLogs = async (params) => {
   const response = await api.get("/admin/audit-logs", { params });
   return response.data;
 };
+// Settings (admin only)
+export const getSettings = async () => {
+  const response = await api.get("/admin/settings");
+  return response.data;
+};
+
+export const updateSettings = async (settings) => {
+  const response = await api.put("/admin/settings", settings);
+  return response.data;
+};

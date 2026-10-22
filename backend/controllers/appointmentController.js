@@ -3,12 +3,52 @@ const Appointment = require("../models/Appointment");
 const Patient = require("../models/Patient");
 const Dentist = require("../models/Dentist");
 const DentalService = require("../models/DentalService");
+const User = require("../models/User"); // check: adjust the path if your User model is named differently
+const Notification = require("../models/Notification");
 const asyncHandler = require("../utils/asyncHandler");
 const {
   isClosed,
   getAllSlots,
   isValidSlot,
 } = require("../utils/clinicSchedule");
+
+/* ---------- helpers ---------- */
+
+const to12h = (t) => {
+  const [h, m] = String(t).split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+};
+const dateKey = (d) => new Date(d).toISOString().slice(0, 10);
+
+// Tell every admin and staff account that a patient changed or cancelled an appointment.
+// Never breaks the request if something goes wrong here.
+const notifyClinic = async (appointmentId, type, title, buildMessage) => {
+  try {
+    const appt = await Appointment.findById(appointmentId)
+      .populate({ path: "patient", populate: { path: "user", select: "name" } })
+      .populate("service", "name");
+    if (!appt) return;
+
+    const people = await User.find({
+      role: { $in: ["admin", "staff"] },
+    }).select("_id");
+    if (people.length === 0) return;
+
+    const who = appt.patient?.user?.name || "A patient";
+    const message = buildMessage(who, appt);
+    await Notification.insertMany(
+      people.map((u) => ({
+        user: u._id,
+        appointment: appt._id,
+        type,
+        title,
+        message,
+      })),
+    );
+  } catch (err) {
+    console.error("Notification error:", err.message);
+  }
+};
 
 // @desc    Patient books a new appointment
 // @route   POST /api/appointments
@@ -189,6 +229,22 @@ const updateAppointmentStatus = asyncHandler(async (req, res) => {
     throw new Error("Appointment not found");
   }
 
+  // Hindi puwedeng i-mark as Completed ang appointment na hindi pa dumarating ang petsa
+  if (status === "Completed") {
+    const today = new Date().toLocaleDateString("en-CA", {
+      timeZone: "Asia/Manila",
+    }); // YYYY-MM-DD, oras sa Pilipinas
+    const apptDay = new Date(appointment.appointmentDate)
+      .toISOString()
+      .slice(0, 10);
+    if (apptDay > today) {
+      res.status(400);
+      throw new Error(
+        "This appointment can only be marked as completed on or after its scheduled date.",
+      );
+    }
+  }
+
   const previousStatus = appointment.status;
 
   appointment.status = status;
@@ -214,10 +270,11 @@ const updateAppointmentStatus = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Patient reschedules their own appointment
+// @desc    Patient reschedules their own appointment (reason required; service can change too)
 // @route   PATCH /api/appointments/:id/reschedule
 const rescheduleAppointment = asyncHandler(async (req, res) => {
-  const { appointmentDate, appointmentTime } = req.body;
+  const { appointmentDate, appointmentTime, service, rescheduleReason } =
+    req.body;
 
   const appointment = await Appointment.findById(req.params.id);
   if (!appointment) {
@@ -235,12 +292,23 @@ const rescheduleAppointment = asyncHandler(async (req, res) => {
     throw new Error("Not authorized to reschedule this appointment");
   }
 
-  // Hindi na puwedeng i-reschedule kung tapos na o kanselado na
-  if (["Completed", "Cancelled"].includes(appointment.status)) {
+  // Puwede lang kung Pending o Confirmed pa
+  if (!["Pending", "Confirmed"].includes(appointment.status)) {
     res.status(400);
     throw new Error(
-      `Cannot reschedule an appointment that is already ${appointment.status.toLowerCase()}`,
+      `Cannot change an appointment that is already ${appointment.status.toLowerCase()}`,
     );
+  }
+
+  // Optional: bagong service
+  let newServiceId = appointment.service;
+  if (service && String(service) !== String(appointment.service)) {
+    const newService = await DentalService.findById(service);
+    if (!newService || !newService.isActive) {
+      res.status(404);
+      throw new Error("Dental service not found or no longer offered");
+    }
+    newServiceId = newService._id;
   }
 
   // Block kung sarado ang clinic sa bagong petsa
@@ -256,7 +324,7 @@ const rescheduleAppointment = asyncHandler(async (req, res) => {
     throw new Error("Please choose a time between 9:00 AM and 3:00 PM.");
   }
 
-  // I-check ulit kung may conflict sa bagong petsa/oras (parehong logic ng createAppointment)
+  // I-check ulit kung may conflict sa bagong petsa/oras
   const conflict = await Appointment.findOne({
     _id: { $ne: appointment._id }, // huwag isama ang sarili niya sa check
     dentist: appointment.dentist,
@@ -271,11 +339,43 @@ const rescheduleAppointment = asyncHandler(async (req, res) => {
     );
   }
 
+  // Kailangan may nabago talaga
+  const unchanged =
+    dateKey(appointment.appointmentDate) ===
+      String(appointmentDate).slice(0, 10) &&
+    appointment.appointmentTime === appointmentTime &&
+    String(newServiceId) === String(appointment.service);
+  if (unchanged) {
+    res.status(400);
+    throw new Error("Nothing was changed. Pick a new date, time or service.");
+  }
+
+  // Itabi ang dating detalye at ang reason
+  const oldService = await DentalService.findById(appointment.service).select(
+    "name",
+  );
+  appointment.rescheduleHistory.push({
+    fromDate: appointment.appointmentDate,
+    fromTime: appointment.appointmentTime,
+    fromServiceName: oldService?.name || "",
+    reason: rescheduleReason,
+    changedAt: new Date(),
+  });
+
   appointment.appointmentDate = appointmentDate;
   appointment.appointmentTime = appointmentTime;
+  appointment.service = newServiceId;
   appointment.status = "Pending"; // kailangan ulit ma-confirm pagkatapos ma-reschedule
 
   await appointment.save();
+
+  await notifyClinic(
+    appointment._id,
+    "appointment_rescheduled",
+    "Appointment rescheduled",
+    (who, a) =>
+      `${who} moved their ${a.service?.name || "appointment"} to ${dateKey(a.appointmentDate)} at ${to12h(a.appointmentTime)}. Reason: ${rescheduleReason}`,
+  );
 
   res.status(200).json({
     success: true,
@@ -284,7 +384,7 @@ const rescheduleAppointment = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Patient cancels their own appointment
+// @desc    Patient cancels their own appointment (reason required)
 // @route   DELETE /api/appointments/:id
 const cancelAppointment = asyncHandler(async (req, res) => {
   const appointment = await Appointment.findById(req.params.id);
@@ -306,11 +406,24 @@ const cancelAppointment = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Cannot cancel an appointment that is already completed");
   }
+  if (appointment.status === "Cancelled") {
+    res.status(400);
+    throw new Error("This appointment is already cancelled");
+  }
 
+  const reason = req.body.cancellationReason || "Cancelled by patient";
   appointment.status = "Cancelled";
-  appointment.cancellationReason =
-    req.body.cancellationReason || "Cancelled by patient";
+  appointment.cancellationReason = reason;
+  appointment.cancelledAt = new Date();
   await appointment.save();
+
+  await notifyClinic(
+    appointment._id,
+    "appointment_cancelled",
+    "Appointment cancelled",
+    (who, a) =>
+      `${who} cancelled their ${a.service?.name || "appointment"} on ${dateKey(a.appointmentDate)} at ${to12h(a.appointmentTime)}. Reason: ${reason}`,
+  );
 
   res.status(200).json({
     success: true,

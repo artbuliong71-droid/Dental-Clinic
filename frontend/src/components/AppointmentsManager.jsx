@@ -6,6 +6,7 @@ import {
   formatDate,
   formatTime,
   isActiveStatus,
+  todayStr,
 } from "../utils/dateUtils";
 import "./manage.css";
 
@@ -62,7 +63,7 @@ const AppointmentsManager = ({
       setBusyId(null);
     }
   };
-
+  const isFuture = (a) => String(a.appointmentDate).slice(0, 10) > todayStr();
   return (
     <div>
       {showFilters && (
@@ -133,6 +134,22 @@ const AppointmentsManager = ({
                     >
                       {appt.status}
                     </span>
+                    {appt.status === "Cancelled" && appt.cancellationReason && (
+                      <span className="cell-sub">
+                        Reason: {appt.cancellationReason}
+                      </span>
+                    )}
+                    {appt.status !== "Cancelled" &&
+                      appt.rescheduleHistory?.length > 0 && (
+                        <span className="cell-sub">
+                          Rescheduled:{" "}
+                          {
+                            appt.rescheduleHistory[
+                              appt.rescheduleHistory.length - 1
+                            ].reason
+                          }
+                        </span>
+                      )}
                   </td>
                   <td data-label="Action" className="col-action">
                     {appt.status === "Pending" && (
@@ -149,7 +166,12 @@ const AppointmentsManager = ({
                       <button
                         type="button"
                         className="btn-primary-sm sm"
-                        disabled={busyId === appt._id}
+                        disabled={busyId === appt._id || isFuture(appt)}
+                        title={
+                          isFuture(appt)
+                            ? "Available on the appointment day"
+                            : undefined
+                        }
                         onClick={() => act(appt._id, "Completed")}
                       >
                         Mark completed

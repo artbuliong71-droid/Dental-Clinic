@@ -15,7 +15,16 @@ export const getMyAppointments = async () => {
   return response.data;
 };
 
-export const cancelAppointment = async (id) => {
-  const response = await api.delete(`/appointments/${id}`);
+// A reason is required. DELETE needs the body inside `data`.
+export const cancelAppointment = async (id, cancellationReason) => {
+  const response = await api.delete(`/appointments/${id}`, {
+    data: { cancellationReason },
+  });
+  return response.data;
+};
+
+// payload: { appointmentDate, appointmentTime, service?, rescheduleReason }
+export const rescheduleAppointment = async (id, payload) => {
+  const response = await api.patch(`/appointments/${id}/reschedule`, payload);
   return response.data;
 };

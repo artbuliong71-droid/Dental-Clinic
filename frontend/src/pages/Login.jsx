@@ -50,7 +50,16 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => {
+    try {
+      if (sessionStorage.getItem("sessionExpired")) {
+        return "Your session has expired due to inactivity. Please log in again.";
+      }
+    } catch {
+      /* ignore */
+    }
+    return "";
+  });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -58,6 +67,11 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    try {
+      sessionStorage.removeItem("sessionExpired");
+    } catch {
+      /* ignore */
+    }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
       setError("Enter a valid email, like name@example.com.");

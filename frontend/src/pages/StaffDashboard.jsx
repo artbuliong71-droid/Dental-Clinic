@@ -23,7 +23,14 @@ import {
 import { todayStr } from "../utils/dateUtils";
 import "../components/dashboard.css";
 import "../components/manage.css";
-
+const VIEW_KEY = "staffActiveView";
+const VALID_VIEWS = [
+  "overview",
+  "schedule",
+  "appointments",
+  "walkin",
+  "closures",
+];
 const StaffDashboard = () => {
   const { user } = useAuth();
 
@@ -34,7 +41,14 @@ const StaffDashboard = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [dataLoading, setDataLoading] = useState(true);
-  const [activeView, setActiveView] = useState("overview");
+  const [activeView, setActiveView] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(VIEW_KEY);
+      return VALID_VIEWS.includes(saved) ? saved : "overview";
+    } catch {
+      return "overview";
+    }
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sidebarItems = [
@@ -48,7 +62,13 @@ const StaffDashboard = () => {
     { key: "walkin", label: "Walk-in", icon: <UserPlus size={18} /> },
     { key: "closures", label: "Closed Dates", icon: <CalendarX size={18} /> },
   ];
-
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, activeView);
+    } catch {
+      /* ignore */
+    }
+  }, [activeView]);
   useEffect(() => {
     loadAppointments();
     getClosedDates()

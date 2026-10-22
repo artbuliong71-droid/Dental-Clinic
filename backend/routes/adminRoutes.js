@@ -16,7 +16,10 @@ const {
   deleteAccount,
 } = require("../controllers/accountsController");
 const { protect, authorize } = require("../middleware/authMiddleware");
-
+const {
+  getSettings,
+  updateSettings,
+} = require("../controllers/settingsController");
 // Lahat ng routes dito ay Admin-only (may-ari lang, hindi staff)
 router.get("/users", protect, authorize("admin"), getAllUsers);
 router.patch(
@@ -59,5 +62,7 @@ router.delete(
   deleteAccount,
 );
 router.get("/audit-logs", protect, authorize("admin"), getAuditLogs);
-
+// Settings (session timeout)
+router.get("/settings", protect, authorize("admin"), getSettings);
+router.put("/settings", protect, authorize("admin"), updateSettings);
 module.exports = router;

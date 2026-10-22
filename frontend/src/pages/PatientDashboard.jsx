@@ -24,7 +24,6 @@ import { getDentists } from "../api/dentistsApi";
 import {
   bookAppointment,
   getMyAppointments,
-  cancelAppointment,
   getAvailableSlots,
 } from "../api/appointmentsApi";
 import { getClosedDates } from "../api/closedDatesApi";
@@ -33,6 +32,7 @@ import { dentistLabel, greetingName } from "../utils/dateUtils";
 import { getMyRecords, updateMyProfile } from "../api/recordsApi";
 import MedicalProfileForm from "../components/MedicalProfileForm";
 import MyRecords from "../components/MyRecords";
+import ManageAppointmentModal from "../components/ManageAppointmentModal";
 import "../components/dashboard.css";
 
 /* ---------- Helpers ---------- */
@@ -106,6 +106,36 @@ const emptyForm = {
   appointmentTime: "",
   reason: "",
 };
+const VIEW_KEY = "patientActiveView";
+const VALID_VIEWS = ["overview", "book", "appointments", "records", "profile"];
+const BANNER_KEY = "profileBannerHidden";
+
+// Fields made by the system, not filled in by the patient (skipped in the check)
+const SKIP_KEYS = [
+  "_id",
+  "id",
+  "__v",
+  "user",
+  "patient",
+  "patientId",
+  "createdAt",
+  "updatedAt",
+  "createdDate",
+  "updatedDate",
+];
+const isEmptyValue = (v) => {
+  if (v == null || v === false) return true;
+  if (typeof v === "string") return v.trim() === "";
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === "object") return Object.values(v).every(isEmptyValue);
+  return false;
+};
+// The profile counts as incomplete when the patient hasn't entered anything yet
+const isProfileIncomplete = (p) =>
+  !p ||
+  Object.entries(p)
+    .filter(([key]) => !SKIP_KEYS.includes(key))
+    .every(([, value]) => isEmptyValue(value));
 
 /* ---------- Component ---------- */
 
@@ -122,12 +152,27 @@ const PatientDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [notes, setNotes] = useState([]);
   const [savingProfile, setSavingProfile] = useState(false);
-
+  const [managing, setManaging] = useState(null);
+  const [recordsLoaded, setRecordsLoaded] = useState(false);
+  const [bannerHidden, setBannerHidden] = useState(() => {
+    try {
+      return sessionStorage.getItem(BANNER_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
-  const [activeView, setActiveView] = useState("overview");
+  const [activeView, setActiveView] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(VIEW_KEY);
+      return VALID_VIEWS.includes(saved) ? saved : "overview";
+    } catch {
+      return "overview";
+    }
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sidebarItems = [
@@ -145,7 +190,13 @@ const PatientDashboard = () => {
     { key: "records", label: "My Records", icon: <FileText size={18} /> },
     { key: "profile", label: "My Profile", icon: <User size={18} /> },
   ];
-
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, activeView);
+    } catch {
+      /* ignore */
+    }
+  }, [activeView]);
   useEffect(() => {
     loadData();
     loadRecords();
@@ -233,6 +284,7 @@ const PatientDashboard = () => {
       const res = await getMyRecords();
       setProfile(res.data.profile);
       setNotes(res.data.notes);
+      setRecordsLoaded(true); // only now do we know if the profile is empty
     } catch (err) {
       /* ignore */
     }
@@ -296,16 +348,20 @@ const PatientDashboard = () => {
     }
   };
 
-  const handleCancel = async (id) => {
-    if (!window.confirm("Are you sure you want to cancel this appointment?"))
-      return;
+  const handleManageDone = async (msg) => {
+    setManaging(null);
+    setError("");
+    setMessage(msg);
+    await loadData();
+  };
 
+  // "Later" on the profile reminder: hidden until the next login
+  const hideBanner = () => {
+    setBannerHidden(true);
     try {
-      await cancelAppointment(id);
-      setMessage("Appointment cancelled.");
-      loadData();
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to cancel appointment.");
+      sessionStorage.setItem(BANNER_KEY, "1");
+    } catch {
+      /* ignore */
     }
   };
 
@@ -325,10 +381,18 @@ const PatientDashboard = () => {
   const selectedService = services.find((s) => s._id === formData.service);
   const selectedDentist = dentists.find((d) => d._id === formData.dentist);
 
+  const showProfileBanner =
+    recordsLoaded &&
+    !bannerHidden &&
+    activeView !== "profile" &&
+    isProfileIncomplete(profile);
+
   /* ---------- Small render helpers ---------- */
   const renderAppointment = (appt) => {
     const date = parseDate(appt.appointmentDate);
     const canCancel = isActive(appt);
+    const lastMove =
+      appt.rescheduleHistory?.[appt.rescheduleHistory.length - 1];
     return (
       <li key={appt._id} className="appt-card">
         <div className="appt-date" aria-hidden="true">
@@ -347,6 +411,15 @@ const PatientDashboard = () => {
           {appt.reason && (
             <span className="appt-meta">Note: {appt.reason}</span>
           )}
+          {appt.status === "Cancelled" && appt.cancellationReason && (
+            <span className="appt-meta">Reason: {appt.cancellationReason}</span>
+          )}
+          {lastMove && isActive(appt) && (
+            <span className="appt-meta">
+              Moved from {formatDate(lastMove.fromDate)} at{" "}
+              {formatTime(lastMove.fromTime)}
+            </span>
+          )}
         </div>
         <div className="appt-actions">
           <span className={`status-badge status-${appt.status.toLowerCase()}`}>
@@ -355,10 +428,10 @@ const PatientDashboard = () => {
           {canCancel && (
             <button
               type="button"
-              className="btn-outline-danger"
-              onClick={() => handleCancel(appt._id)}
+              className="btn-secondary"
+              onClick={() => setManaging(appt)}
             >
-              Cancel
+              Reschedule / Cancel
             </button>
           )}
         </div>
@@ -387,6 +460,37 @@ const PatientDashboard = () => {
             <p className="success-message banner" role="status">
               {message}
             </p>
+          )}
+
+          {showProfileBanner && (
+            <div className="profile-banner" role="status">
+              <span className="profile-banner-icon" aria-hidden="true">
+                <User size={20} />
+              </span>
+              <div className="profile-banner-text">
+                <strong>Complete your profile</strong>
+                <span>
+                  Please add your birthdate, gender and address so your dentist
+                  is ready for your visit.
+                </span>
+              </div>
+              <div className="profile-banner-actions">
+                <button
+                  type="button"
+                  className="btn-primary-sm"
+                  onClick={() => changeView("profile")}
+                >
+                  Complete profile
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={hideBanner}
+                >
+                  Later
+                </button>
+              </div>
+            </div>
           )}
 
           {dataLoading ? (
@@ -727,6 +831,16 @@ const PatientDashboard = () => {
           )}
         </div>
       </div>
+
+      {managing && (
+        <ManageAppointmentModal
+          appointment={managing}
+          services={services}
+          closedDates={closedDates}
+          onClose={() => setManaging(null)}
+          onDone={handleManageDone}
+        />
+      )}
     </div>
   );
 };

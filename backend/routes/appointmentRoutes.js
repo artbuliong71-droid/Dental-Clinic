@@ -15,6 +15,7 @@ const {
 const {
   createAppointmentValidation,
   rescheduleValidation,
+  cancelValidation,
   updateStatusValidation,
 } = require("../middleware/validators/appointmentValidators");
 
@@ -53,7 +54,7 @@ router.patch(
   updateAppointmentStatus,
 );
 
-// Patient — i-reschedule ang sariling appointment
+// Patient — i-reschedule ang sariling appointment (may reason; puwede ring palitan ang service)
 router.patch(
   "/:id/reschedule",
   protect,
@@ -63,7 +64,14 @@ router.patch(
   rescheduleAppointment,
 );
 
-// Patient — i-cancel ang sariling appointment
-router.delete("/:id", protect, authorize("patient"), cancelAppointment);
+// Patient — i-cancel ang sariling appointment (may reason na kailangan)
+router.delete(
+  "/:id",
+  protect,
+  authorize("patient"),
+  cancelValidation,
+  validate,
+  cancelAppointment,
+);
 
 module.exports = router;

@@ -107,18 +107,6 @@ const login = asyncHandler(async (req, res) => {
       email: user.email, // frontend needs this to know which account to verify next
     },
   });
-
-  // Password is correct — generate a one-time code and email it before issuing a token
-  await issueOTP(user);
-
-  res.status(200).json({
-    success: true,
-    message:
-      "Password verified. A verification code has been sent to your email.",
-    data: {
-      email: user.email, // frontend needs this to know which account to verify next
-    },
-  });
 });
 
 // Login user - Step 1b: send a NEW code (only right after a successful password step)
