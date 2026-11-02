@@ -8,6 +8,7 @@ const ACTIONS = [
   "staff_created",
   "account_deleted",
   "password_reset",
+  "patient_registered",
 ];
 const ROLES = ["patient", "staff", "admin"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

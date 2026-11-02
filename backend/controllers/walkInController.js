@@ -9,7 +9,14 @@ const { isClosed, isValidSlot } = require("../utils/clinicSchedule");
 const { notifyAppointmentStatus } = require("../utils/appointmentNotifier");
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const crypto = require("crypto");
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const NAME_REGEX = /^\p{L}{2,}(\s+\p{L}{2,})+$/u; // first at last name, letra at space lang
+const PHONE_REGEX = /^09\d{9}$/;
+
+// Random na password. Hindi ito ipinapakita kahit kanino.
+const tempPassword = () => crypto.randomBytes(9).toString("base64url") + "a1";
 // @desc    Staff/Admin searches existing patient accounts
 // @route   GET /api/walk-in/patients?q=
 const searchPatients = asyncHandler(async (req, res) => {
@@ -137,5 +144,56 @@ const createWalkIn = asyncHandler(async (req, res) => {
     data: appointment,
   });
 });
+// @desc    Staff/Admin registers a walk-in patient who has no account yet
+// @route   POST /api/walk-in/patients
+const registerPatient = asyncHandler(async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const email = String(req.body.email || "")
+    .trim()
+    .toLowerCase();
+  const phone = String(req.body.phone || "").trim();
 
-module.exports = { searchPatients, createWalkIn };
+  if (!NAME_REGEX.test(name)) {
+    res.status(400);
+    throw new Error("Enter the full name (first and last name, letters only).");
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    res.status(400);
+    throw new Error("Please enter a valid email address.");
+  }
+  if (!PHONE_REGEX.test(phone)) {
+    res.status(400);
+    throw new Error("Phone number must be 11 digits and start with 09.");
+  }
+
+  if (await User.findOne({ email })) {
+    res.status(409);
+    throw new Error("An account with this email already exists.");
+  }
+  if (await User.findOne({ phone })) {
+    res.status(409);
+    throw new Error("An account with this phone number already exists.");
+  }
+
+  // Ang role ay laging "patient", hindi galing sa request
+  const user = await User.create({
+    name,
+    email,
+    phone,
+    password: tempPassword(),
+    role: "patient",
+  });
+  const patient = await Patient.create({ user: user._id });
+
+  res.status(201).json({
+    success: true,
+    message: "Patient registered.",
+    data: {
+      patientId: patient._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+    },
+  });
+});
+module.exports = { searchPatients, createWalkIn, registerPatient };

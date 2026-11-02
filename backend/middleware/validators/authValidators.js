@@ -2,6 +2,10 @@ const { body } = require("express-validator");
 
 // Letters (including ñ, é, etc.) and spaces only. No numbers, apostrophes, hyphens or periods.
 const NAME_REGEX = /^\p{L}[\p{L}\s]*$/u;
+// At least 2 words, each at least 2 letters (e.g. "Juan Dela Cruz")
+const FULL_NAME_REGEX = /^\p{L}{2,}(\s+\p{L}{2,})+$/u;
+// Same letter 3+ times in a row (e.g. "tttt")
+const REPEATED_CHARS_REGEX = /(\p{L})\1{2,}/iu;
 // Philippine mobile number: 11 digits, starts with 09
 const PHONE_REGEX = /^09\d{9}$/;
 // Keep the email exactly as typed (only lowercased). The default normalizeEmail() removes the
@@ -22,11 +26,20 @@ const registerValidation = [
     .withMessage("Name must be 2-100 characters")
     .bail()
     .matches(NAME_REGEX)
-    .withMessage("Name can only contain letters and spaces"),
+    .withMessage("Name can only contain letters and spaces")
+    .bail()
+    .matches(FULL_NAME_REGEX)
+    .withMessage("Please enter your first and last name")
+    .bail()
+    .not()
+    .matches(REPEATED_CHARS_REGEX)
+    .withMessage("Please enter a valid name"),
+
   body("email")
     .trim()
     .notEmpty()
     .withMessage("Email is required")
+    .bail()
     .isEmail()
     .withMessage("Please provide a valid email address")
     .normalizeEmail(EMAIL_OPTIONS),
@@ -46,9 +59,12 @@ const registerValidation = [
   // ang staff ay ginagawa ng admin sa dashboard.
   body("role").optional().isIn(["patient"]).withMessage("Role must be patient"),
 
-  // Optional (an empty string is allowed). If filled in: 11 digits, starts with 09.
+  // Required: 11 digits, starts with 09.
   body("phone")
-    .optional({ checkFalsy: true })
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .bail()
     .matches(PHONE_REGEX)
     .withMessage("Phone number must be 11 digits and start with 09"),
 ];
@@ -58,6 +74,7 @@ const loginValidation = [
     .trim()
     .notEmpty()
     .withMessage("Email is required")
+    .bail()
     .isEmail()
     .withMessage("Please provide a valid email address")
     .normalizeEmail(EMAIL_OPTIONS),
@@ -70,6 +87,7 @@ const verifyOTPValidation = [
     .trim()
     .notEmpty()
     .withMessage("Email is required")
+    .bail()
     .isEmail()
     .withMessage("Please provide a valid email address")
     .normalizeEmail(EMAIL_OPTIONS),
@@ -78,8 +96,10 @@ const verifyOTPValidation = [
     .trim()
     .notEmpty()
     .withMessage("Verification code is required")
+    .bail()
     .isLength({ min: 6, max: 6 })
     .withMessage("Verification code must be 6 digits")
+    .bail()
     .isNumeric()
     .withMessage("Verification code must contain numbers only"),
 ];

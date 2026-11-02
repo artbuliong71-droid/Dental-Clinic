@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
-import { Search, UserRound } from "lucide-react";
+import { Search, UserRound, UserPlus } from "lucide-react";
 import {
   searchWalkInPatients,
   createWalkInAppointment,
+  registerWalkInPatient,
 } from "../api/walkInApi";
 import { getAvailableSlots } from "../api/appointmentsApi";
 import { dentistLabel, formatTime } from "../utils/dateUtils";
 import "./manage.css";
 import "./walkIn.css";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const NAME_REGEX = /^\p{L}{2,}(\s+\p{L}{2,})+$/u;
+const PHONE_REGEX = /^09\d{9}$/;
 
 const todayStr = () => {
   const d = new Date();
@@ -22,11 +27,27 @@ const emptyForm = {
   date: todayStr(),
   time: "",
 };
+const emptyReg = { name: "", email: "", phone: "" };
+
+const validateReg = ({ name, email, phone }) => {
+  const errors = {};
+  if (!name.trim()) errors.name = "Full name is required.";
+  else if (!NAME_REGEX.test(name.trim()))
+    errors.name = "Enter the full name (first and last name, letters only).";
+  if (!email.trim()) errors.email = "Email is required.";
+  else if (!EMAIL_REGEX.test(email.trim()))
+    errors.email = "Enter a valid email, like name@example.com.";
+  if (!phone) errors.phone = "Phone number is required.";
+  else if (!PHONE_REGEX.test(phone))
+    errors.phone = "Phone number must be 11 digits and start with 09.";
+  return errors;
+};
 
 const WalkInView = ({ services = [], dentists = [], onBooked }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [slots, setSlots] = useState([]);
@@ -34,6 +55,12 @@ const WalkInView = ({ services = [], dentists = [], onBooked }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Register a new patient
+  const [showRegister, setShowRegister] = useState(false);
+  const [reg, setReg] = useState(emptyReg);
+  const [regErrors, setRegErrors] = useState({});
+  const [regSaving, setRegSaving] = useState(false);
 
   // Naglo-load agad pagbukas, at nagfi-filter habang nagta-type
   useEffect(() => {
@@ -51,7 +78,7 @@ const WalkInView = ({ services = [], dentists = [], onBooked }) => {
       }
     }, 300);
     return () => clearTimeout(t);
-  }, [query]);
+  }, [query, reloadKey]);
 
   const handleSearch = (e) => e.preventDefault();
   const loadSlots = async (dentist, date) => {
@@ -90,6 +117,57 @@ const WalkInView = ({ services = [], dentists = [], onBooked }) => {
     setSuccess("");
     if (onlyDentist) loadSlots(onlyDentist, next.date);
   };
+
+  /* ---------- Register a new patient ---------- */
+  const openRegister = () => {
+    // Kung pangalan ang tinype sa search, ilagay na sa form
+    const prefill = /^[\p{L}\s]+$/u.test(query.trim()) ? query.trim() : "";
+    setReg({ ...emptyReg, name: prefill });
+    setRegErrors({});
+    setSelected(null);
+    setError("");
+    setSuccess("");
+    setShowRegister(true);
+  };
+
+  const handleRegChange = (e) => {
+    let { name, value } = e.target;
+    if (name === "phone") value = value.replace(/\D/g, "").slice(0, 11);
+    setReg({ ...reg, [name]: value });
+    if (regErrors[name]) setRegErrors({ ...regErrors, [name]: "" });
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError("");
+    const errors = validateReg(reg);
+    setRegErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setRegSaving(true);
+    try {
+      const res = await registerWalkInPatient({
+        name: reg.name.trim(),
+        email: reg.email.trim(),
+        phone: reg.phone,
+      });
+      setShowRegister(false);
+      setReg(emptyReg);
+      setQuery("");
+      setReloadKey((k) => k + 1);
+      openForm(res.data); // diretso sa pag-book
+      setSuccess(
+        `${res.data.name} was registered. Continue booking the walk-in below.`,
+      );
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Could not register the patient.",
+      );
+    } finally {
+      setRegSaving(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -119,7 +197,8 @@ const WalkInView = ({ services = [], dentists = [], onBooked }) => {
     <div>
       <h2>Walk-in Patients</h2>
       <p className="muted">
-        Search for the patient's existing account, then record their visit.
+        Search for the patient's account, then record their visit. No account
+        yet? Register them first.
       </p>
 
       <form className="manage-toolbar" onSubmit={handleSearch}>
@@ -140,6 +219,9 @@ const WalkInView = ({ services = [], dentists = [], onBooked }) => {
         >
           {searching ? "Searching..." : "Search"}
         </button>
+        <button type="button" className="btn-ghost" onClick={openRegister}>
+          <UserPlus size={16} aria-hidden="true" /> Register new patient
+        </button>
       </form>
 
       {error && (
@@ -153,11 +235,92 @@ const WalkInView = ({ services = [], dentists = [], onBooked }) => {
         </p>
       )}
 
+      {showRegister && (
+        <form className="walkin-form" onSubmit={handleRegister} noValidate>
+          <h3>
+            <UserPlus size={18} aria-hidden="true" /> Register a new patient
+          </h3>
+          <p className="muted">
+            The patient can set their own password later using "Forgot password"
+            with this email.
+          </p>
+
+          <label>
+            Full name
+            <input
+              name="name"
+              type="text"
+              placeholder="e.g. Juan Dela Cruz"
+              value={reg.name}
+              onChange={handleRegChange}
+              aria-invalid={!!regErrors.name}
+            />
+            {regErrors.name && (
+              <small className="walkin-error" role="alert">
+                {regErrors.name}
+              </small>
+            )}
+          </label>
+
+          <label>
+            Email
+            <input
+              name="email"
+              type="email"
+              placeholder="name@example.com"
+              value={reg.email}
+              onChange={handleRegChange}
+              aria-invalid={!!regErrors.email}
+            />
+            {regErrors.email && (
+              <small className="walkin-error" role="alert">
+                {regErrors.email}
+              </small>
+            )}
+          </label>
+
+          <label>
+            Phone number
+            <input
+              name="phone"
+              type="tel"
+              inputMode="numeric"
+              placeholder="09XXXXXXXXX"
+              value={reg.phone}
+              onChange={handleRegChange}
+              aria-invalid={!!regErrors.phone}
+            />
+            {regErrors.phone && (
+              <small className="walkin-error" role="alert">
+                {regErrors.phone}
+              </small>
+            )}
+          </label>
+
+          <div className="walkin-actions">
+            <button
+              type="button"
+              className="chip"
+              onClick={() => setShowRegister(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary-sm"
+              disabled={regSaving}
+            >
+              {regSaving ? "Registering..." : "Register and continue"}
+            </button>
+          </div>
+        </form>
+      )}
+
       {!searching && results.length === 0 && (
         <div className="empty-state">
           <p>
             {query.trim()
-              ? "No existing patient account found. Ask the patient to register first."
+              ? "No patient account found. Use “Register new patient” above."
               : "No registered patients yet."}
           </p>
         </div>
@@ -185,7 +348,10 @@ const WalkInView = ({ services = [], dentists = [], onBooked }) => {
                     <button
                       type="button"
                       className="btn-primary-sm sm"
-                      onClick={() => openForm(p)}
+                      onClick={() => {
+                        setShowRegister(false);
+                        openForm(p);
+                      }}
                     >
                       Book walk-in
                     </button>

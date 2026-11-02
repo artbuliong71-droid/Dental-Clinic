@@ -60,6 +60,8 @@ def load_rows(db):
     all_appointments = list(db.appointments.find({}))
     kept = [a for a in all_appointments if a.get("patient") in patient_ids]
     skipped = len(all_appointments) - len(kept)
+    # Hindi na kasama ang Cancelled sa kahit anong bilang
+    kept = [a for a in kept if a.get("status") != "Cancelled"]
     if skipped:
         print(f"Ignored {skipped} appointment(s) that belong to deleted patients", flush=True)
 
@@ -194,16 +196,16 @@ def compute(spark, appointments, services, patients, today=None):
     counts = {r["status"]: r["count"] for r in joined.groupBy("status").count().collect()}
     by_status = {s: int(counts.get(s, 0)) for s in STATUSES}
     revenue_total = float(joined.agg(F.sum("revenue")).first()[0] or 0.0)
+      # Ang percentage ay hindi na kasama ang cancelled sa pagbilang ng base
     pct = lambda n: round(100.0 * n / total, 1) if total else 0.0
     summary = {
         "totalAppointments": int(total),
         "byStatus": by_status,
         "completionRate": pct(by_status["Completed"]),
-        "cancellationRate": pct(by_status["Cancelled"]),
+        "cancellationRate": 0.0,
         "estimatedRevenue": round(revenue_total, 2),
         "averagePerVisit": round(revenue_total / by_status["Completed"], 2) if by_status["Completed"] else 0.0,
     }
-
     # ---- appointments + revenue per month (last N months, empty months shown as 0)
     rows = joined.groupBy("month").agg(
         F.count("*").alias("total"),

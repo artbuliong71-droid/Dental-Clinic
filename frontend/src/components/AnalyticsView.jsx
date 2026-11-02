@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   CalendarDays,
   Check,
-  X,
+  Clock,
   Users,
   RefreshCw,
   Download,
@@ -421,11 +421,13 @@ const STATUS_COLORS = {
 };
 
 const StatusDonut = ({ byStatus, total }) => {
-  const entries = Object.keys(STATUS_COLORS).map((s) => ({
-    status: s,
-    count: byStatus?.[s] ?? 0,
-    color: STATUS_COLORS[s],
-  }));
+  const entries = Object.keys(STATUS_COLORS)
+    .filter((s) => s !== "Cancelled")
+    .map((s) => ({
+      status: s,
+      count: byStatus?.[s] ?? 0,
+      color: STATUS_COLORS[s],
+    }));
   const sum = entries.reduce((a, e) => a + e.count, 0);
   const pctOf = (n) => (sum ? (n / sum) * 100 : 0);
 
@@ -586,10 +588,11 @@ const AnalyticsView = ({ analytics, onRefresh, refreshing }) => {
       color: COLORS.amber,
     },
     {
-      label: "Cancellation Rate",
-      value: `${summary.cancellationRate}%`,
-      icon: X,
-      color: COLORS.red,
+      label: "Upcoming",
+      value:
+        (summary.byStatus?.Pending ?? 0) + (summary.byStatus?.Confirmed ?? 0),
+      icon: Clock,
+      color: COLORS.purple,
     },
   ];
 

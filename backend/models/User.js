@@ -37,6 +37,14 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
+      // Required for patients only, so the seeded admin and admin-created staff
+      // accounts are not blocked if they have no phone number.
+      required: [
+        function () {
+          return this.role === "patient";
+        },
+        "Phone number is required",
+      ],
       match: [/^09\d{9}$/, "Phone number must be 11 digits and start with 09"],
     },
     isActive: {

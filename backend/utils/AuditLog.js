@@ -135,6 +135,14 @@ const auditEvent = (kind) => async (req, res, next) => {
           actor: person(req.user),
           target: person(target),
         });
+      } else if (kind === "patient-registered" && status === 201) {
+        const created = (body && body.data) || {};
+        await record({
+          ...base,
+          action: "patient_registered",
+          actor: person(req.user),
+          target: { name: created.name, email: created.email, role: "patient" },
+        });
       }
     } catch (err) {
       console.error("Audit log failed:", err.message);

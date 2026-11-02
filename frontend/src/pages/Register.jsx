@@ -20,8 +20,12 @@ const EyeIcon = ({ off }) => (
 );
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-// Letters (including ñ, é, etc.), spaces, apostrophes, hyphens and periods only. No numbers.
+// Letters (including ñ, é, etc.) and spaces only. No numbers, apostrophes, hyphens or periods.
 const NAME_REGEX = /^\p{L}[\p{L}\s]*$/u;
+// At least 2 words, each at least 2 letters (e.g. "Juan Dela Cruz")
+const FULL_NAME_REGEX = /^\p{L}{2,}(\s+\p{L}{2,})+$/u;
+// Same letter 3+ times in a row (e.g. "tttt")
+const REPEATED_CHARS_REGEX = /(\p{L})\1{2,}/iu;
 // Philippine mobile number: 11 digits, starts with 09
 const PHONE_REGEX = /^09\d{9}$/;
 
@@ -29,10 +33,12 @@ const validate = ({ name, email, password, phone }) => {
   const errors = {};
 
   if (!name.trim()) errors.name = "Full name is required.";
-  else if (name.trim().length < 2)
-    errors.name = "Name must be at least 2 characters.";
   else if (!NAME_REGEX.test(name.trim()))
     errors.name = "Name can only contain letters and spaces.";
+  else if (!FULL_NAME_REGEX.test(name.trim()))
+    errors.name = "Please enter your first and last name.";
+  else if (REPEATED_CHARS_REGEX.test(name.trim()))
+    errors.name = "Please enter a valid name.";
 
   if (!email.trim()) errors.email = "Email is required.";
   else if (!EMAIL_REGEX.test(email.trim()))
@@ -44,8 +50,9 @@ const validate = ({ name, email, password, phone }) => {
   else if (!/[A-Za-z]/.test(password) || !/\d/.test(password))
     errors.password = "Password must include both letters and numbers.";
 
-  // Phone is optional, but if filled in it must be 11 digits starting with 09.
-  if (phone && !PHONE_REGEX.test(phone))
+  // Phone is required: 11 digits starting with 09.
+  if (!phone) errors.phone = "Phone number is required.";
+  else if (!PHONE_REGEX.test(phone))
     errors.phone =
       "Phone number must be 11 digits and start with 09 (e.g. 09171234567).";
 
@@ -163,7 +170,7 @@ const Register = () => {
           </p>
         )}
 
-        {field("name", "Full Name", "text", "Enter your full name")}
+        {field("name", "Full Name", "text", "e.g. Esmi Ringhoy")}
         {field("email", "Email", "email", "Enter your email")}
         {field(
           "password",
@@ -173,6 +180,7 @@ const Register = () => {
         )}
         {field("phone", "Phone Number", "tel", "09XXXXXXXXX", {
           inputMode: "numeric",
+          maxLength: 11,
         })}
 
         <button type="submit" className="btn-primary" disabled={loading}>

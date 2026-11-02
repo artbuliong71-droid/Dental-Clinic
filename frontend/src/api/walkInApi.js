@@ -5,3 +5,5 @@ export const searchWalkInPatients = async (q) =>
 
 export const createWalkInAppointment = async (payload) =>
   (await api.post("/walk-in/appointments", payload)).data;
+export const registerWalkInPatient = async (payload) =>
+  (await api.post("/walk-in/patients", payload)).data;

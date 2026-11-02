@@ -11,6 +11,10 @@ const EVENTS = {
   staff_created: { label: "Created staff account", badge: "status-confirmed" },
   account_deleted: { label: "Deleted account", badge: "status-pending" },
   password_reset: { label: "Reset password", badge: "status-pending" },
+  patient_registered: {
+    label: "Registered a patient",
+    badge: "status-confirmed",
+  },
 };
 
 const emptyFilters = { q: "", action: "", role: "" };
